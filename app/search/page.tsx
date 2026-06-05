@@ -35,7 +35,7 @@ export default function SearchMangaPage() {
     });
 
     const data = await response.json();
-    setResults(data.data.Page.media);
+    setSearchResults(data.data.Page.media);
   };
 
   return (
@@ -54,7 +54,7 @@ export default function SearchMangaPage() {
       </form>
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
-        {results.map((manga) => (
+        {searchResults.map((manga) => (
           <div key={manga.id} className="bg-[#23232f] rounded-lg p-4">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={manga.coverImage.large} alt={manga.title.romaji} className="w-full h-48 object-cover rounded mb-4" />
