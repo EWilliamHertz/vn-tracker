@@ -47,22 +47,35 @@ export default async function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-b from-[#23232f] to-[#1a1a24] py-20 px-6">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-5xl md:text-6xl font-bold mb-6">
-            Your Manga & Visual Novel Home
-          </h1>
-          <p className="text-xl text-gray-300 mb-8">
-            Track which mangas you&apos;re currently reading & up to date with, which ones you&apos;re planning to read, and which ones you&apos;re done with 🌸
-          </p>
-          {!user && (
-            <Link 
-              href="/login"
-              className="inline-block px-8 py-4 bg-[#8b5cf6] hover:bg-[#7c3aed] rounded-lg text-lg font-semibold transition-all transform hover:scale-105"
-            >
-              Start Reading
-            </Link>
-          )}
+      <section className="relative py-0 px-0 overflow-hidden">
+        <div className="relative h-96 md:h-screen">
+          <img 
+            src="/landing-hero.png" 
+            alt="Cozy Haven - Your Manga & Visual Novel Home"
+            className="w-full h-full object-cover"
+          />
+          {/* Dark overlay for text readability */}
+          <div className="absolute inset-0 bg-black/40"></div>
+          
+          {/* Content overlay */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="max-w-4xl mx-auto text-center px-6">
+              <h1 className="text-5xl md:text-7xl font-bold mb-6 text-white drop-shadow-lg">
+                Your Cozy Haven
+              </h1>
+              <p className="text-xl md:text-2xl text-gray-100 mb-8 drop-shadow-lg">
+                Track, discover, and connect with the manga & visual novel community 🌸
+              </p>
+              {!user && (
+                <Link 
+                  href="/login"
+                  className="inline-block px-8 py-4 bg-[#8b5cf6] hover:bg-[#7c3aed] rounded-lg text-lg font-semibold transition-all transform hover:scale-105 shadow-lg"
+                >
+                  Start Reading
+                </Link>
+              )}
+            </div>
+          </div>
         </div>
       </section>
 
