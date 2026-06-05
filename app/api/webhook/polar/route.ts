@@ -13,8 +13,14 @@ export async function POST(request: Request) {
     const body = await request.text();
     const webhookSecret = process.env.POLAR_WEBHOOK_SECRET!;
     
+    // Convert Headers to Record<string, string> for validateEvent
+    const headers: Record<string, string> = {};
+    request.headers.forEach((value, key) => {
+      headers[key] = value;
+    });
+    
     // Cryptographically verify the event comes from Polar
-    const event = validateEvent(body, request.headers, webhookSecret);
+    const event = validateEvent(body, headers, webhookSecret);
 
     // When a subscription is successfully created and active
     if (event.type === 'subscription.active') {
