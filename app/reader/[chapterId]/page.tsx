@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { Lock } from 'lucide-react';
 
 export default async function ReaderPage({ params }: { params: { chapterId: string } }) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   // Fetch the chapter

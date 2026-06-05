@@ -3,7 +3,7 @@ import { createClient } from '../utils/supabase/server';
 import { BookOpen, Library, ShieldAlert } from 'lucide-react';
 
 export default async function LandingPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   
   // Fetch from our live Supabase Database
   const { data: availableTitles, error } = await supabase

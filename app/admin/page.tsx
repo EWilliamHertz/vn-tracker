@@ -4,7 +4,7 @@ import { Shield, CloudDownload, Library, CheckCircle, ArrowLeft } from 'lucide-r
 import Link from 'next/link';
 
 export default async function AdminPage({ searchParams }: { searchParams: { success?: string; error?: string } }) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   // STAGE-GATE ADMIN CHECK: Restrict strictly to your email
@@ -34,7 +34,7 @@ export default async function AdminPage({ searchParams }: { searchParams: { succ
   const installComic = async (formData: FormData) => {
     'use server'
     const episode = formData.get('episode') as string;
-    const supabase = createClient();
+    const supabase = await createClient();
 
     try {
       if (episode === '1') {

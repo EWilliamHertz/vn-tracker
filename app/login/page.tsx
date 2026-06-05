@@ -8,7 +8,7 @@ export default function LoginPage({ searchParams }: { searchParams: { message: s
     'use server'
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
-    const supabase = createClient();
+    const supabase = await createClient();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) return redirect('/login?message=Could not authenticate user');
     return redirect('/dashboard');
@@ -20,7 +20,7 @@ export default function LoginPage({ searchParams }: { searchParams: { message: s
     const origin = headersList.get('origin') || 'http://localhost:3000';
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
-    const supabase = createClient();
+    const supabase = await createClient();
     const { error } = await supabase.auth.signUp({
       email,
       password,
