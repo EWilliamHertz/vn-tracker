@@ -62,7 +62,17 @@ export default async function AdminPage({ searchParams }: { searchParams: { succ
             chapter_number: 1,
             title: 'The Potion of Flight',
             is_premium: false,
-            pages:
+            pages: [
+              'https://peppercarrot.com/0_sources/ep01_Potion-of-Flight/low-res/en_Pepper-and-Carrot_by-David-Revoy_E01P00.jpg',
+              'https://peppercarrot.com/0_sources/ep01_Potion-of-Flight/low-res/en_Pepper-and-Carrot_by-David-Revoy_E01P01.jpg',
+              'https://peppercarrot.com/0_sources/ep01_Potion-of-Flight/low-res/en_Pepper-and-Carrot_by-David-Revoy_E01P02.jpg',
+              'https://peppercarrot.com/0_sources/ep01_Potion-of-Flight/low-res/en_Pepper-and-Carrot_by-David-Revoy_E01P03.jpg',
+              'https://peppercarrot.com/0_sources/ep01_Potion-of-Flight/low-res/en_Pepper-and-Carrot_by-David-Revoy_E01P04.jpg',
+              'https://peppercarrot.com/0_sources/ep01_Potion-of-Flight/low-res/en_Pepper-and-Carrot_by-David-Revoy_E01P05.jpg',
+              'https://peppercarrot.com/0_sources/ep01_Potion-of-Flight/low-res/en_Pepper-and-Carrot_by-David-Revoy_E01P06.jpg',
+              'https://peppercarrot.com/0_sources/ep01_Potion-of-Flight/low-res/en_Pepper-and-Carrot_by-David-Revoy_E01P07.jpg',
+              'https://peppercarrot.com/0_sources/ep01_Potion-of-Flight/low-res/en_Pepper-and-Carrot_by-David-Revoy_E01P08.jpg'
+            ]
           });
 
         if (cErr) throw new Error(cErr.message);
@@ -91,7 +101,15 @@ export default async function AdminPage({ searchParams }: { searchParams: { succ
             chapter_number: 3,
             title: 'The Secret Ingredients',
             is_premium: true, // Paywalled to verify checkout setups!
-            pages:
+            pages: [
+              'https://peppercarrot.com/0_sources/ep03_The-Secret-Ingredients/low-res/en_Pepper-and-Carrot_by-David-Revoy_E03P00.jpg',
+              'https://peppercarrot.com/0_sources/ep03_The-Secret-Ingredients/low-res/en_Pepper-and-Carrot_by-David-Revoy_E03P01.jpg',
+              'https://peppercarrot.com/0_sources/ep03_The-Secret-Ingredients/low-res/en_Pepper-and-Carrot_by-David-Revoy_E03P02.jpg',
+              'https://peppercarrot.com/0_sources/ep03_The-Secret-Ingredients/low-res/en_Pepper-and-Carrot_by-David-Revoy_E03P03.jpg',
+              'https://peppercarrot.com/0_sources/ep03_The-Secret-Ingredients/low-res/en_Pepper-and-Carrot_by-David-Revoy_E03P04.jpg',
+              'https://peppercarrot.com/0_sources/ep03_The-Secret-Ingredients/low-res/en_Pepper-and-Carrot_by-David-Revoy_E03P05.jpg',
+              'https://peppercarrot.com/0_sources/ep03_The-Secret-Ingredients/low-res/en_Pepper-and-Carrot_by-David-Revoy_E03P06.jpg'
+            ]
           });
 
         if (cErr) throw new Error(cErr.message);
