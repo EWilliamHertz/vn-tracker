@@ -27,7 +27,7 @@ export async function POST(request: Request) {
       const subscription = event.data;
       
       // We pass the Supabase user ID as the 'external_customer_id' during checkout
-      const userId = subscription.customer_id; // In production, map this using external_customer_id
+      const userId = subscription.customerId; // In production, map this using external_customer_id
 
       await supabaseAdmin
        .from('user_subscriptions')
