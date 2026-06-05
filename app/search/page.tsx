@@ -3,7 +3,7 @@ import { useState } from 'react';
 
 export default function SearchMangaPage() {
   const [query, setQuery] = useState('');
-  const = useState<any>();
+  const [searchResults, setSearchResults] = useState<any[]>([]);
 
   const searchAniList = async (e: React.FormEvent) => {
     e.preventDefault();
