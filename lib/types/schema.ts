@@ -119,7 +119,6 @@ export interface SeriesWithDetails extends MangaSeries {
   chapters?: Chapter[];
   latest_chapter?: Chapter;
   review_count?: number;
-  average_rating?: number;
 }
 
 export interface ChapterWithPages extends Chapter {
