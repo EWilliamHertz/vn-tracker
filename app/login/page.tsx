@@ -16,7 +16,7 @@ export default function LoginPage({ searchParams }: { searchParams: { message: s
 
   const signUp = async (formData: FormData) => {
     'use server'
-    const headersList = headers();
+    const headersList = await headers();
     const origin = headersList.get('origin') || 'http://localhost:3000';
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;

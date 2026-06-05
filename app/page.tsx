@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { createClient } from '../utils/supabase/server';
-import { BookOpen, Library, ShieldAlert } from 'lucide-react';
+import { BookOpen, Library, Heart, Users } from 'lucide-react';
 
 export default async function LandingPage() {
   const supabase = await createClient();
@@ -12,70 +12,152 @@ export default async function LandingPage() {
 
   const titles = availableTitles || [];
 
-  return (
-    <div className="min-h-screen bg-[#111118] text-gray-200 flex overflow-hidden font-sans">
-      {/* Main Splashscreen Area */}
-      <div className="flex-1 flex flex-col items-center justify-center p-8 relative">
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-[#1b1b26] to-[#0f0f15] z-0"></div>
-        
-        <div className="z-10 text-center max-w-2xl bg-[#171722]/90 p-12 rounded-3xl shadow-2xl border border-neutral-800 backdrop-blur-md">
-          <BookOpen className="w-16 h-16 text-[#c084fc] mx-auto mb-6 animate-pulse" />
-          <h1 className="text-4xl md:text-5xl font-extrabold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-[#e2a8ff] to-[#818cf8]">
-            Cozy Manga & VN Haven
-          </h1>
-          <p className="text-lg text-gray-400 mb-8 leading-relaxed">
-            A secure, warm community for manga, comic and visual novel enthusiasts. 
-            Read beautiful, high-resolution indie creations and support storytellers directly.
-          </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <Link 
-              href="/login" 
-              className="px-8 py-4 bg-[#8b5cf6] hover:bg-[#7c3aed] text-white rounded-full font-bold transition-all shadow-lg shadow-purple-500/20 hover:scale-[1.02]"
-            >
-              Enter the Library
-            </Link>
-            <Link 
-              href="/admin" 
-              className="px-8 py-4 bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 rounded-full font-bold transition-all"
-            >
-              Admin Controls
-            </Link>
-          </div>
-        </div>
-      </div>
+  // Get current user (to show dashboard link instead of login)
+  const { data: { user } } = await supabase.auth.getUser();
 
-      {/* Dynamic Sidebar with Available Titles */}
-      <div className="w-80 bg-[#0c0c12] border-l border-neutral-900 p-6 hidden lg:block z-10 overflow-y-auto">
-        <div className="flex items-center gap-2 mb-6 border-b border-neutral-900 pb-3">
-          <Library className="w-5 h-5 text-indigo-400" />
-          <h3 className="text-xl font-bold text-gray-300">Available Titles</h3>
+  return (
+    <div className="min-h-screen bg-[#1a1a24] text-white">
+      {/* Navigation */}
+      <nav className="border-b border-gray-800 bg-[#23232f] sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <Link href="/" className="text-2xl font-bold text-[#8b5cf6]">
+            Cozy Haven
+          </Link>
+          <div className="flex gap-4">
+            <Link href="/#discover" className="text-gray-400 hover:text-white transition-all">
+              Discover
+            </Link>
+            {user ? (
+              <Link 
+                href="/dashboard" 
+                className="px-4 py-2 bg-[#8b5cf6] hover:bg-[#7c3aed] rounded-lg transition-all"
+              >
+                My Library
+              </Link>
+            ) : (
+              <Link 
+                href="/login" 
+                className="px-4 py-2 bg-[#8b5cf6] hover:bg-[#7c3aed] rounded-lg transition-all"
+              >
+                Sign In
+              </Link>
+            )}
+          </div>
         </div>
-        
-        {titles.length === 0? (
-          <div className="text-center py-8 px-4 bg-neutral-900/40 rounded-xl border border-neutral-900">
-            <ShieldAlert className="w-8 h-8 text-amber-500 mx-auto mb-2" />
-            <p className="text-sm text-neutral-400">No titles installed yet.</p>
-            <p className="text-xs text-neutral-500 mt-1">Logged-in admins can install comics from the Admin link.</p>
+      </nav>
+
+      {/* Hero Section */}
+      <section className="bg-gradient-to-b from-[#23232f] to-[#1a1a24] py-20 px-6">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-5xl md:text-6xl font-bold mb-6">
+            Your Manga & Visual Novel Home
+          </h1>
+          <p className="text-xl text-gray-300 mb-8">
+            Track which mangas you&apos;re currently reading & up to date with, which ones you&apos;re planning to read, and which ones you&apos;re done with 🌸
+          </p>
+          {!user && (
+            <Link 
+              href="/login"
+              className="inline-block px-8 py-4 bg-[#8b5cf6] hover:bg-[#7c3aed] rounded-lg text-lg font-semibold transition-all transform hover:scale-105"
+            >
+              Start Reading
+            </Link>
+          )}
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-16 px-6 bg-[#1a1a24]">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-3xl font-bold text-center mb-12">Why Join Cozy Haven?</h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="bg-[#23232f] border border-gray-800 rounded-lg p-8 text-center">
+              <Library className="w-12 h-12 text-[#8b5cf6] mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-3">Organize Your Reading</h3>
+              <p className="text-gray-400">
+                Keep track of your reading progress across all your favorite manga and visual novels
+              </p>
+            </div>
+            <div className="bg-[#23232f] border border-gray-800 rounded-lg p-8 text-center">
+              <Users className="w-12 h-12 text-[#8b5cf6] mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-3">Connect with Community</h3>
+              <p className="text-gray-400">
+                Come alongside & join the community together with fellow manga & visual novel lovers!
+              </p>
+            </div>
+            <div className="bg-[#23232f] border border-gray-800 rounded-lg p-8 text-center">
+              <Heart className="w-12 h-12 text-[#8b5cf6] mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-3">Support Creators</h3>
+              <p className="text-gray-400">
+                Are you a mangaka? Reach a broader audience for your series through our platform
+              </p>
+            </div>
           </div>
-        ) : (
-          <div className="space-y-6">
-            {titles.map(title => (
-              <div key={title.id} className="group cursor-pointer">
-                <div className="w-full h-36 bg-neutral-900 rounded-lg mb-2 overflow-hidden border border-neutral-800">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img 
-                    src={title.cover_image_url || '/placeholder.png'} 
-                    alt={title.title} 
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                </div>
-                <h4 className="font-semibold text-gray-200 group-hover:text-[#e2a8ff] transition-colors">{title.title}</h4>
-                <p className="text-xs text-neutral-500 mt-0.5">{title.author}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+        </div>
+      </section>
+
+      {/* Browse Section */}
+      <section id="discover" className="py-16 px-6">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-3xl font-bold mb-4">Latest Titles</h2>
+          <p className="text-gray-400 mb-8">Automatically updated with new series</p>
+          
+          {titles.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {titles.map((title: any) => (
+                <Link 
+                  key={title.id}
+                  href={`/reader/${title.id}`}
+                  className="group"
+                >
+                  <div className="bg-[#23232f] border border-gray-800 rounded-lg overflow-hidden hover:border-[#8b5cf6] transition-all">
+                    {title.cover_image && (
+                      <img 
+                        src={title.cover_image} 
+                        alt={title.title}
+                        className="w-full h-64 object-cover group-hover:opacity-80 transition-opacity"
+                      />
+                    )}
+                    <div className="p-4">
+                      <h3 className="font-semibold text-white truncate group-hover:text-[#8b5cf6] transition-colors">
+                        {title.title}
+                      </h3>
+                      {title.author && (
+                        <p className="text-sm text-gray-400 mt-2">{title.author}</p>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 text-gray-400">
+              <p>No titles available yet. Check back soon!</p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Creator Section */}
+      <section className="bg-gradient-to-r from-[#8b5cf6] to-[#6d28d9] py-16 px-6">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl font-bold mb-4">Are you a Creator?</h2>
+          <p className="text-lg mb-8 text-gray-100">
+            Share your manga or visual novel with our growing community. Reach readers who love what you create.
+          </p>
+          <Link 
+            href="/creator-signup"
+            className="inline-block px-8 py-3 bg-white text-[#8b5cf6] font-semibold rounded-lg hover:bg-gray-100 transition-all"
+          >
+            Submit Your Work
+          </Link>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-gray-800 bg-[#23232f] py-8 px-6 text-center text-gray-400">
+        <p>&copy; 2024 Cozy Haven. A space for manga & visual novel lovers.</p>
+      </footer>
     </div>
   );
 }
