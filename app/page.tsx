@@ -151,9 +151,6 @@ export default async function LandingPage() {
                           src={title.cover_image_url} 
                           alt={title.title}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                          onError={(e) => {
-                            e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="400"%3E%3Crect fill="%23444" width="300" height="400"/%3E%3Ctext x="50%" y="50%" text-anchor="middle" dy=".3em" fill="white" font-size="14"%3ENo Cover%3C/text%3E%3C/svg%3E';
-                          }}
                         />
                       ) : (
                         <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center">
