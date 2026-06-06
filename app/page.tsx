@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { createClient } from '../utils/supabase/server';
-import { titleToSlug } from '../utils/slug';
-import { BookOpen, Library, Heart, Users, Zap, Hash } from 'lucide-react';
+import { BookOpen, Library, Heart, Users, Zap, Hash, Sparkles, ArrowRight, TrendingUp, Shield } from 'lucide-react';
 import MangaCover from '@/components/MangaCover';
 
 export const dynamic = 'force-dynamic';
@@ -18,6 +17,10 @@ export default async function LandingPage() {
   const titles = availableTitles || [];
 
   const { data: { user } } = await supabase.auth.getUser();
+
+  const { count: totalTitles } = await supabase
+    .from('manga_series')
+    .select('*', { count: 'exact', head: true });
 
   return (
     <div className="min-h-screen bg-[#1a1a24] text-white">
@@ -37,6 +40,9 @@ export default async function LandingPage() {
             </Link>
             <Link href="/community/groups" className="text-gray-400 hover:text-white transition-all text-sm">
               Groups
+            </Link>
+            <Link href="/creator-signup" className="text-gray-400 hover:text-white transition-all text-sm flex items-center gap-1">
+              <Sparkles size={14} /> Creators
             </Link>
           </div>
           <div className="flex gap-3 items-center">
@@ -64,32 +70,29 @@ export default async function LandingPage() {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section
-        className="relative w-full flex items-center justify-center overflow-hidden"
-        style={{ height: 'calc(100vh - 65px)' }}
-      >
+      {/* Hero Section — 85vh max, no overflow */}
+      <section className="relative w-full flex items-center justify-center overflow-hidden" style={{ height: '85vh', maxHeight: '800px' }}>
         {/* Background image */}
         <div className="absolute inset-0">
           <img
             src="/landing-hero.png"
             alt="Ouryie Hero"
-            className="w-full h-full object-cover object-center"
-            style={{ display: 'block' }}
+            className="w-full h-full object-cover"
+            style={{ objectPosition: '50% 30%' }}
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/50 to-[#1a1a24]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/60 to-[#1a1a24]" />
         </div>
 
         {/* Content */}
         <div className="relative z-10 max-w-4xl mx-auto text-center px-6">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#8b5cf6]/20 border border-[#8b5cf6]/30 rounded-full text-sm text-[#8b5cf6] mb-6 backdrop-blur">
-            <Users size={14} /> Join 50,000+ readers worldwide
+            <TrendingUp size={14} /> {totalTitles || 100}+ titles &bull; Growing community
           </div>
           <h1 className="text-5xl md:text-7xl font-bold mb-6 text-white drop-shadow-2xl leading-tight">
             Your Manga &<br />Visual Novel Home
           </h1>
           <p className="text-xl md:text-2xl text-gray-200 mb-10 drop-shadow max-w-2xl mx-auto leading-relaxed">
-            Track your reading, connect with fans, join groups, and discover your next favorite series.
+            Track your reading progress, connect with fans, join groups, and discover your next favorite series.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             {!user && (
@@ -97,7 +100,7 @@ export default async function LandingPage() {
                 href="/auth/sign-up"
                 className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#8b5cf6] hover:bg-[#7c3aed] rounded-xl text-lg font-semibold transition-all transform hover:scale-105 shadow-xl"
               >
-                Start for Free
+                Start for Free <ArrowRight size={18} />
               </Link>
             )}
             <Link
@@ -116,6 +119,28 @@ export default async function LandingPage() {
         </div>
       </section>
 
+      {/* Stats Bar */}
+      <section className="bg-[#23232f] border-y border-gray-800 py-6 px-6">
+        <div className="max-w-5xl mx-auto flex flex-wrap justify-center gap-8 md:gap-16 text-center">
+          <div>
+            <p className="text-2xl md:text-3xl font-bold text-[#8b5cf6]">{totalTitles || '100'}+</p>
+            <p className="text-xs text-gray-400 mt-1">Manga Titles</p>
+          </div>
+          <div>
+            <p className="text-2xl md:text-3xl font-bold text-[#8b5cf6]">Free</p>
+            <p className="text-xs text-gray-400 mt-1">To Join</p>
+          </div>
+          <div>
+            <p className="text-2xl md:text-3xl font-bold text-[#8b5cf6]">∞</p>
+            <p className="text-xs text-gray-400 mt-1">Reading Lists</p>
+          </div>
+          <div>
+            <p className="text-2xl md:text-3xl font-bold text-[#8b5cf6]">Real-time</p>
+            <p className="text-xs text-gray-400 mt-1">Messaging</p>
+          </div>
+        </div>
+      </section>
+
       {/* Features */}
       <section className="py-20 px-6 bg-[#1a1a24]">
         <div className="max-w-6xl mx-auto">
@@ -124,9 +149,9 @@ export default async function LandingPage() {
           <div className="grid md:grid-cols-3 gap-6">
             <div className="bg-[#23232f] border border-gray-800 rounded-2xl p-8 text-center hover:border-[#8b5cf6]/50 transition-all">
               <Library className="w-12 h-12 text-[#8b5cf6] mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-3">Organize Your Reading</h3>
+              <h3 className="text-xl font-semibold mb-3">Track Your Progress</h3>
               <p className="text-gray-400 text-sm leading-relaxed">
-                Track reading progress, create custom lists, and never lose your place again across thousands of titles.
+                Auto-track chapters as you read. Set status, rate titles, and pick up exactly where you left off.
               </p>
             </div>
             <div className="bg-[#23232f] border border-gray-800 rounded-2xl p-8 text-center hover:border-[#8b5cf6]/50 transition-all">
@@ -140,7 +165,7 @@ export default async function LandingPage() {
               <Zap className="w-12 h-12 text-[#8b5cf6] mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-3">Stay Updated</h3>
               <p className="text-gray-400 text-sm leading-relaxed">
-                Get notified about new chapters and series releases. Never miss a drop from your watchlist.
+                Get notified about new chapters and series. Never miss a drop from your watchlist.
               </p>
             </div>
           </div>
@@ -185,7 +210,7 @@ export default async function LandingPage() {
               {titles.map((title: any) => (
                 <Link
                   key={title.id}
-                  href={`/manga/${titleToSlug(title.title)}`}
+                  href={`/manga/${title.id}`}
                   className="group"
                 >
                   <div className="bg-[#23232f] border border-gray-800 rounded-xl overflow-hidden hover:border-[#8b5cf6]/60 transition-all h-full flex flex-col">
@@ -235,12 +260,20 @@ export default async function LandingPage() {
           <p className="text-lg mb-8 text-gray-100 max-w-xl mx-auto">
             Share your manga or visual novel with our growing community. Reach readers who love what you create.
           </p>
-          <Link
-            href="/community/groups"
-            className="inline-block px-8 py-3 bg-white text-[#8b5cf6] font-semibold rounded-xl hover:bg-gray-100 transition-all"
-          >
-            Join the Community
-          </Link>
+          <div className="flex gap-4 justify-center flex-wrap">
+            <Link
+              href="/creator-signup"
+              className="inline-flex items-center gap-2 px-8 py-3 bg-white text-[#8b5cf6] font-semibold rounded-xl hover:bg-gray-100 transition-all"
+            >
+              <Sparkles size={16} /> Apply as Creator
+            </Link>
+            <Link
+              href="/community"
+              className="inline-block px-8 py-3 border-2 border-white/50 text-white font-semibold rounded-xl hover:bg-white/10 transition-all"
+            >
+              Join the Community
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -254,9 +287,9 @@ export default async function LandingPage() {
             <Link href="/browse" className="hover:text-white transition-colors">Browse</Link>
             <Link href="/community" className="hover:text-white transition-colors">Community</Link>
             <Link href="/community/groups" className="hover:text-white transition-colors">Groups</Link>
-            <Link href="/community/messages" className="hover:text-white transition-colors">Messages</Link>
+            <Link href="/creator-signup" className="hover:text-white transition-colors">Creators</Link>
           </div>
-          <p className="text-gray-500 text-sm">&copy; 2024 Ouryie. A space for manga & visual novel lovers.</p>
+          <p className="text-gray-500 text-sm">&copy; 2025 Ouryie. A space for manga & visual novel lovers.</p>
         </div>
       </footer>
     </div>
