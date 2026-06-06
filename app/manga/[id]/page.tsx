@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { fetchChapters, dedupeChapters, type MDChapter } from '@/utils/mangadex';
+import { fetchChapters, dedupeChapters, extractMangaDexId, type MDChapter } from '@/utils/mangadex';
 import {
   ArrowLeft, BookOpen, Star, Plus, Check, Clock, Pause, X,
   ChevronDown, ChevronUp, Loader2, BookmarkPlus, Play, Search,
@@ -53,6 +53,7 @@ export default function MangaDetailPage() {
   const [totalChapters, setTotalChapters] = useState(0);
   const [showAllChapters, setShowAllChapters] = useState(false);
   const [chapterSearch, setChapterSearch] = useState('');
+  const [mangaDexUuid, setMangaDexUuid] = useState<string | null>(null);
 
   // Reading progress
   const [progress, setProgress] = useState<ReadingProgress | null>(null);
@@ -78,15 +79,18 @@ export default function MangaDetailPage() {
         } else {
           setManga(data);
           document.title = `${data.title} — Ouryie`;
+          const mdId = extractMangaDexId(data.image_url);
+          setMangaDexUuid(mdId || mangaId);
         }
         setLoading(false);
       });
   }, [mangaId]);
 
-  // Fetch chapters from MangaDex
+  // Fetch chapters from MangaDex (using real MangaDex UUID)
   useEffect(() => {
+    if (!mangaDexUuid) return;
     setChaptersLoading(true);
-    fetchChapters(mangaId, 0, 500).then(feed => {
+    fetchChapters(mangaDexUuid, 0, 500).then(feed => {
       if (!feed) {
         setChaptersError('Could not load chapters from MangaDex. This manga may not be linked.');
         setChaptersLoading(false);
@@ -98,7 +102,7 @@ export default function MangaDetailPage() {
       setTotalChapters(deduped.length);
       setChaptersLoading(false);
     });
-  }, [mangaId]);
+  }, [mangaDexUuid]);
 
   // Fetch user + reading progress
   useEffect(() => {
@@ -412,7 +416,7 @@ export default function MangaDetailPage() {
             <div className="text-center py-16">
               <p className="text-gray-400 mb-2">{chaptersError}</p>
               <a
-                href={`https://mangadex.org/title/${mangaId}`}
+                href={`https://mangadex.org/title/${mangaDexUuid || mangaId}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-violet-400 hover:text-violet-300 text-sm"
@@ -427,7 +431,7 @@ export default function MangaDetailPage() {
               <p className="text-gray-400 mb-2">No readable chapters available</p>
               <p className="text-gray-500 text-sm mb-4">This manga may be licensed or not yet uploaded to MangaDex.</p>
               <a
-                href={`https://mangadex.org/title/${mangaId}`}
+                href={`https://mangadex.org/title/${mangaDexUuid || mangaId}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-violet-400 hover:text-violet-300 text-sm"

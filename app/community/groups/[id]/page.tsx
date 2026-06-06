@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import Navbar from '@/components/community/Navbar';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { Users, Hash, Send, Heart, MessageCircle, Loader2, UserPlus, UserMinus, ArrowLeft, MoreHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -27,7 +28,9 @@ interface Comment {
   author?: { username: string; display_name: string; avatar_url: string };
 }
 
-export default function GroupPage({ params }: { params: { id: string } }) {
+export default function GroupPage() {
+  const routeParams = useParams();
+  const groupId = routeParams.id as string;
   const [user, setUser] = useState<any>(null);
   const [group, setGroup] = useState<any>(null);
   const [members, setMembers] = useState<any[]>([]);
@@ -45,13 +48,13 @@ export default function GroupPage({ params }: { params: { id: string } }) {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
 
-      const { data: groupData } = await supabase.from('groups').select('*').eq('id', params.id).single();
+      const { data: groupData } = await supabase.from('groups').select('*').eq('id', groupId).single();
       setGroup(groupData);
 
       const { data: memberData } = await supabase
         .from('group_members')
         .select('user_id, role, joined_at')
-        .eq('group_id', params.id)
+        .eq('group_id', groupId)
         .order('joined_at', { ascending: true })
         .limit(20);
 
@@ -72,7 +75,7 @@ export default function GroupPage({ params }: { params: { id: string } }) {
       const { data: postData } = await supabase
         .from('group_posts')
         .select('*')
-        .eq('group_id', params.id)
+        .eq('group_id', groupId)
         .order('created_at', { ascending: false })
         .limit(30);
 
@@ -92,13 +95,13 @@ export default function GroupPage({ params }: { params: { id: string } }) {
       setLoading(false);
     };
     init();
-  }, [params.id]);
+  }, [groupId]);
 
   const joinGroup = async () => {
     if (!user) { window.location.href = '/login'; return; }
-    const { error } = await supabase.from('group_members').insert({ group_id: params.id, user_id: user.id, role: 'member' });
+    const { error } = await supabase.from('group_members').insert({ group_id: groupId, user_id: user.id, role: 'member' });
     if (!error) {
-      await supabase.from('groups').update({ member_count: (group?.member_count || 0) + 1 }).eq('id', params.id);
+      await supabase.from('groups').update({ member_count: (group?.member_count || 0) + 1 }).eq('id', groupId);
       setGroup((g: any) => g ? { ...g, member_count: g.member_count + 1 } : g);
       setIsMember(true);
       setMemberRole('member');
@@ -108,9 +111,9 @@ export default function GroupPage({ params }: { params: { id: string } }) {
 
   const leaveGroup = async () => {
     if (!user) return;
-    const { error } = await supabase.from('group_members').delete().eq('group_id', params.id).eq('user_id', user.id);
+    const { error } = await supabase.from('group_members').delete().eq('group_id', groupId).eq('user_id', user.id);
     if (!error) {
-      await supabase.from('groups').update({ member_count: Math.max(0, (group?.member_count || 1) - 1) }).eq('id', params.id);
+      await supabase.from('groups').update({ member_count: Math.max(0, (group?.member_count || 1) - 1) }).eq('id', groupId);
       setGroup((g: any) => g ? { ...g, member_count: Math.max(0, g.member_count - 1) } : g);
       setIsMember(false);
       setMemberRole(null);
@@ -121,7 +124,7 @@ export default function GroupPage({ params }: { params: { id: string } }) {
   const createPost = async () => {
     if (!postContent.trim() || !user || posting) return;
     setPosting(true);
-    const { data, error } = await supabase.from('group_posts').insert({ group_id: params.id, user_id: user.id, content: postContent.trim() }).select().single();
+    const { data, error } = await supabase.from('group_posts').insert({ group_id: groupId, user_id: user.id, content: postContent.trim() }).select().single();
     if (!error && data) {
       const { data: profile } = await supabase.from('user_profiles').select('username, display_name, avatar_url').eq('id', user.id).single();
       setPosts(prev => [{ ...data, author: profile, liked: false }, ...prev]);

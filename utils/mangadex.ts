@@ -104,3 +104,12 @@ export function dedupeChapters(chapters: MDChapter[]): MDChapter[] {
     return na - nb;
   });
 }
+
+/** Extract the real MangaDex manga UUID from a cover image URL.
+ *  Cover URLs look like: https://uploads.mangadex.org/covers/{MANGA_UUID}/{filename}
+ *  This lets us link DB records (which may have Supabase-generated UUIDs) to MangaDex. */
+export function extractMangaDexId(imageUrl: string | null | undefined): string | null {
+  if (!imageUrl) return null;
+  const match = imageUrl.match(/covers\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\//i);
+  return match ? match[1] : null;
+}

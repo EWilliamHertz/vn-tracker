@@ -69,6 +69,9 @@ export default function Navbar() {
           <Link href="/community/groups" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">
             Groups
           </Link>
+          <Link href="/community/friends" className="text-gray-400 hover:text-white transition-colors text-sm font-medium flex items-center gap-1">
+            <User size={15} /> Friends
+          </Link>
         </div>
 
         {/* Right side */}

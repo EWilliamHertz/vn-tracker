@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { fetchPages, fetchChapters, pageUrl, dedupeChapters, type MDChapter, type AtHomeData } from '@/utils/mangadex';
+import { fetchPages, fetchChapters, pageUrl, dedupeChapters, extractMangaDexId, type MDChapter, type AtHomeData } from '@/utils/mangadex';
 import { createClient } from '@/utils/supabase/client';
 import {
   ChevronLeft, ChevronRight, ArrowLeft, Settings, Layers,
@@ -40,34 +40,38 @@ export default function ReaderPage() {
 
   // Manga info
   const [mangaTitle, setMangaTitle] = useState('');
+  const [mangaDexUuid, setMangaDexUuid] = useState<string>('');
 
   // Refs
   const scrollRef = useRef<HTMLDivElement>(null);
   const toolbarTimeout = useRef<NodeJS.Timeout>(undefined);
   const lastScrollY = useRef(0);
 
-  // Fetch manga title
+  // Fetch manga title + extract real MangaDex UUID from cover URL
   useEffect(() => {
     const supabase = createClient();
-    supabase.from('manga_series').select('title').eq('id', mangaId).single()
+    supabase.from('manga_series').select('title, image_url').eq('id', mangaId).single()
       .then(({ data }) => {
         if (data) {
           setMangaTitle(data.title);
           document.title = `Reading ${data.title} — Ouryie`;
+          const mdId = extractMangaDexId(data.image_url);
+          setMangaDexUuid(mdId || mangaId);
         }
       });
   }, [mangaId]);
 
-  // Fetch chapter list for navigation
+  // Fetch chapter list for navigation (uses real MangaDex UUID)
   useEffect(() => {
-    fetchChapters(mangaId, 0, 500).then(feed => {
+    if (!mangaDexUuid) return;
+    fetchChapters(mangaDexUuid, 0, 500).then(feed => {
       if (!feed) return;
       const deduped = dedupeChapters(feed.data.filter(c => c.attributes.pages > 0));
       setChapters(deduped);
       const cur = deduped.find(c => c.id === chapterId);
       setCurrentChapter(cur || null);
     });
-  }, [mangaId, chapterId]);
+  }, [mangaDexUuid, chapterId]);
 
   // Fetch pages for current chapter
   useEffect(() => {
