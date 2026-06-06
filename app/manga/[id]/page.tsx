@@ -1,510 +1,358 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState, useMemo } from 'react';
+import { useParams } from 'next/navigation';
+import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { fetchChapters, dedupeChapters, extractMangaDexId, type MDChapter } from '@/utils/mangadex';
-import {
-  ArrowLeft, BookOpen, Star, Plus, Check, Clock, Pause, X,
-  ChevronDown, ChevronUp, Loader2, BookmarkPlus, Play, Search,
-  ExternalLink, Eye
-} from 'lucide-react';
-import OuryieLogo from '@/components/OuryieLogo';
+import { extractMangaDexId, getCoverUrl, fetchChapters } from '@/utils/mangadex';
+import { ArrowLeft, BookOpen, Star, Bookmark, ChevronDown, ChevronUp, ExternalLink, Loader2, Play, Clock, User, CheckCircle } from 'lucide-react';
+import { toast, Toaster } from 'sonner';
 
-interface Manga {
+interface Chapter {
   id: string;
-  title: string;
-  author: string;
-  description: string;
-  status: string;
-  image_url?: string;
-  cover_image_url?: string;
+  attributes: {
+    chapter: string | null;
+    title: string | null;
+    pages: number;
+    publishAt: string;
+    translatedLanguage: string;
+  };
+  relationships: Array<{ type: string; attributes?: { name?: string } }>;
 }
 
-interface ReadingProgress {
-  status: string;
-  current_chapter: number;
-  rating: number | null;
-  total_chapters: number;
-}
-
-const STATUS_OPTIONS = [
-  { value: 'reading', label: 'Reading', icon: BookOpen, color: 'text-green-400' },
-  { value: 'completed', label: 'Completed', icon: Check, color: 'text-blue-400' },
-  { value: 'plan_to_read', label: 'Plan to Read', icon: Clock, color: 'text-yellow-400' },
-  { value: 'on_hold', label: 'On Hold', icon: Pause, color: 'text-orange-400' },
-  { value: 'dropped', label: 'Dropped', icon: X, color: 'text-red-400' },
-];
-
-export default function MangaDetailPage() {
-  const params = useParams();
-  const router = useRouter();
-  const mangaId = params.id as string;
-
-  const [manga, setManga] = useState<Manga | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
-
-  // Chapters
-  const [chapters, setChapters] = useState<MDChapter[]>([]);
-  const [chaptersLoading, setChaptersLoading] = useState(true);
-  const [chaptersError, setChaptersError] = useState('');
+export default function MangaDetail() {
+  const routeParams = useParams();
+  const id = routeParams.id as string;
+  const [manga, setManga] = useState<any>(null);
+  const [chapters, setChapters] = useState<Chapter[]>([]);
   const [totalChapters, setTotalChapters] = useState(0);
+  const [loadingManga, setLoadingManga] = useState(true);
+  const [loadingChapters, setLoadingChapters] = useState(false);
+  const [chapterError, setChapterError] = useState('');
   const [showAllChapters, setShowAllChapters] = useState(false);
-  const [chapterSearch, setChapterSearch] = useState('');
-  const [mangaDexUuid, setMangaDexUuid] = useState<string | null>(null);
-
-  // Reading progress
-  const [progress, setProgress] = useState<ReadingProgress | null>(null);
-  const [user, setUser] = useState<{ id: string } | null>(null);
-  const [showStatusMenu, setShowStatusMenu] = useState(false);
-  const [rating, setRating] = useState(0);
+  const [userRating, setUserRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
+  const [libraryStatus, setLibraryStatus] = useState<string | null>(null);
+  const [currentChapter, setCurrentChapter] = useState(0);
+  const [savingLibrary, setSavingLibrary] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const supabase = createClient();
 
-  // Description
-  const [expandDesc, setExpandDesc] = useState(false);
-
-  // Fetch manga data from Supabase
+  // Load manga from Supabase
   useEffect(() => {
-    const supabase = createClient();
-    supabase
-      .from('manga_series')
-      .select('*')
-      .eq('id', mangaId)
-      .single()
-      .then(({ data, error }) => {
-        if (error || !data) {
-          setNotFound(true);
-        } else {
-          setManga(data);
-          document.title = `${data.title} — Ouryie`;
-          const mdId = extractMangaDexId(data.image_url);
-          setMangaDexUuid(mdId || mangaId);
-        }
-        setLoading(false);
-      });
-  }, [mangaId]);
+    const load = async () => {
+      const { data: { user: u } } = await supabase.auth.getUser();
+      setUser(u);
 
-  // Fetch chapters from MangaDex (using real MangaDex UUID)
-  useEffect(() => {
-    if (!mangaDexUuid) return;
-    setChaptersLoading(true);
-    fetchChapters(mangaDexUuid, 0, 500).then(feed => {
-      if (!feed) {
-        setChaptersError('Could not load chapters from MangaDex. This manga may not be linked.');
-        setChaptersLoading(false);
+      const { data, error } = await supabase
+        .from('manga_series')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error || !data) {
+        setLoadingManga(false);
         return;
       }
-      const readable = feed.data.filter(c => c.attributes.pages > 0);
-      const deduped = dedupeChapters(readable);
-      setChapters(deduped);
-      setTotalChapters(deduped.length);
-      setChaptersLoading(false);
-    });
-  }, [mangaDexUuid]);
+      setManga(data);
+      document.title = `Ouryie — ${data.title}`;
 
-  // Fetch user + reading progress
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) return;
-      setUser({ id: data.user.id });
-      supabase
-        .from('reading_progress')
-        .select('*')
-        .eq('user_id', data.user.id)
-        .eq('manga_id', mangaId)
-        .single()
-        .then(({ data: prog }) => {
-          if (prog) {
-            setProgress(prog);
-            setRating(prog.rating || 0);
-          }
-        });
-    });
-  }, [mangaId]);
+      // Load reading progress
+      if (u) {
+        const { data: progress } = await supabase
+          .from('reading_progress')
+          .select('*')
+          .eq('user_id', u.id)
+          .eq('manga_id', id)
+          .single();
+        if (progress) {
+          setLibraryStatus(progress.status);
+          setCurrentChapter(progress.current_chapter || 0);
+          setUserRating(progress.rating || 0);
+        }
+      }
+      setLoadingManga(false);
+    };
+    load();
+  }, [id]);
 
-  // Save library status
-  const saveStatus = async (status: string) => {
-    if (!user) return;
-    const supabase = createClient();
-    await supabase.from('reading_progress').upsert({
+  // Load chapters from MangaDex via proxy
+  const loadChapters = useCallback(async () => {
+    if (!manga) return;
+    setLoadingChapters(true);
+    setChapterError('');
+    try {
+      const mangaDexId = extractMangaDexId(manga.image_url || '', id);
+      const data = await fetchChapters(mangaDexId, 0, 500);
+      const validChapters = (data.data || []).filter((ch: Chapter) => ch.attributes.pages > 0);
+      setChapters(validChapters);
+      setTotalChapters(data.total || 0);
+      if (validChapters.length === 0 && data.total === 0) {
+        setChapterError('No English chapters available on MangaDex for this title.');
+      } else if (validChapters.length === 0) {
+        setChapterError('Chapters exist but have no pages (may be licensed/removed).');
+      }
+    } catch {
+      setChapterError('Could not load chapters. Please try again later.');
+    }
+    setLoadingChapters(false);
+  }, [manga, id]);
+
+  useEffect(() => { loadChapters(); }, [loadChapters]);
+
+  // Save to library
+  const saveToLibrary = async (status: string) => {
+    if (!user) { toast.error('Sign in to track your reading!'); return; }
+    setSavingLibrary(true);
+    const { error } = await supabase.from('reading_progress').upsert({
       user_id: user.id,
-      manga_id: mangaId,
+      manga_id: id,
       status,
-      total_chapters: totalChapters,
+      current_chapter: currentChapter,
+      rating: userRating,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id,manga_id' });
-    setProgress(prev => prev ? { ...prev, status } : { status, current_chapter: 0, rating: null, total_chapters: totalChapters });
-    setShowStatusMenu(false);
+    if (error) toast.error('Failed to save');
+    else { setLibraryStatus(status); toast.success(`Marked as ${status}`); }
+    setSavingLibrary(false);
   };
 
-  // Save rating
-  const saveRating = async (r: number) => {
+  // Update chapter
+  const updateChapter = async (ch: number) => {
     if (!user) return;
-    setRating(r);
-    const supabase = createClient();
+    setCurrentChapter(ch);
     await supabase.from('reading_progress').upsert({
       user_id: user.id,
-      manga_id: mangaId,
-      rating: r,
+      manga_id: id,
+      current_chapter: ch,
+      status: libraryStatus || 'reading',
       updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id,manga_id' });
-    setProgress(prev => prev ? { ...prev, rating: r } : { status: 'reading', current_chapter: 0, rating: r, total_chapters: totalChapters });
   };
 
-  const coverUrl = manga?.image_url || manga?.cover_image_url || '';
+  // Rate manga
+  const rateManga = async (rating: number) => {
+    if (!user) { toast.error('Sign in to rate!'); return; }
+    setUserRating(rating);
+    await supabase.from('reading_progress').upsert({
+      user_id: user.id,
+      manga_id: id,
+      rating,
+      status: libraryStatus || 'plan_to_read',
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id,manga_id' });
+    toast.success(`Rated ${rating}/10`);
+  };
 
-  // Filter chapters by search
-  const filteredChapters = useMemo(() => {
-    if (!chapterSearch) return chapters;
-    return chapters.filter(ch =>
-      (ch.attributes.chapter || '').includes(chapterSearch) ||
-      (ch.attributes.title || '').toLowerCase().includes(chapterSearch.toLowerCase())
-    );
-  }, [chapters, chapterSearch]);
+  const displayedChapters = showAllChapters ? chapters : chapters.slice(0, 20);
+  const statuses = ['reading', 'completed', 'plan_to_read', 'on_hold', 'dropped'];
 
-  const displayChapters = showAllChapters ? filteredChapters : filteredChapters.slice(0, 20);
-
-  // Find "continue reading" chapter
-  const continueChapter = useMemo(() => {
-    if (!progress || !chapters.length) return chapters[0] || null;
-    const chNum = progress.current_chapter || 0;
-    // Find the next unread chapter
-    const next = chapters.find(ch => parseFloat(ch.attributes.chapter || '0') > chNum);
-    return next || chapters[chapters.length - 1];
-  }, [progress, chapters]);
-
-  if (loading) {
+  if (loadingManga) {
     return (
-      <div className="min-h-screen bg-[#0d0d1a] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-violet-400" />
+      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-[#8b5cf6] animate-spin" />
       </div>
     );
   }
 
-  if (notFound || !manga) {
+  if (!manga) {
     return (
-      <div className="min-h-screen bg-[#0d0d1a] flex items-center justify-center">
-        <div className="text-center">
-          <BookOpen className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-white mb-2">Manga Not Found</h1>
-          <p className="text-gray-400 mb-6">This manga doesn&apos;t exist in our database.</p>
-          <Link href="/browse" className="px-6 py-3 bg-violet-600 rounded-lg text-white hover:bg-violet-500 transition">
-            Browse Manga
-          </Link>
-        </div>
+      <div className="min-h-screen bg-[#0a0a0f] flex flex-col items-center justify-center text-white">
+        <BookOpen className="w-16 h-16 text-gray-600 mb-4" />
+        <h1 className="text-2xl font-bold mb-2">Manga Not Found</h1>
+        <p className="text-gray-400 mb-6">This title doesn't exist in our catalogue.</p>
+        <Link href="/browse" className="text-[#8b5cf6] hover:underline">← Browse all manga</Link>
       </div>
     );
   }
 
-  const currentStatus = STATUS_OPTIONS.find(s => s.value === progress?.status);
+  const coverSrc = getCoverUrl(manga.image_url);
 
   return (
-    <div className="min-h-screen bg-[#0d0d1a]">
-      {/* NAV */}
-      <nav className="border-b border-white/10 bg-[#0d0d1a]/80 backdrop-blur sticky top-0 z-30">
-        <div className="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-4">
-            <button onClick={() => router.back()} className="p-2 hover:bg-white/10 rounded-lg transition">
-              <ArrowLeft className="w-5 h-5 text-gray-300" />
-            </button>
-            <Link href="/" className="flex items-center gap-2">
-              <OuryieLogo size={28} />
-              <span className="font-bold text-lg text-white hidden sm:block">Ouryie</span>
-            </Link>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link href="/browse" className="text-sm text-gray-400 hover:text-white transition">Browse</Link>
-            <Link href="/dashboard" className="text-sm text-gray-400 hover:text-white transition">Dashboard</Link>
-          </div>
+    <div className="min-h-screen bg-[#0a0a0f] text-white">
+      <Toaster position="top-center" theme="dark" />
+      {/* Nav */}
+      <nav className="border-b border-gray-800 bg-[#0a0a0f]/95 backdrop-blur sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+          <Link href="/browse" className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
+            <ArrowLeft size={18} /> Browse
+          </Link>
+          <Link href="/" className="text-xl font-bold text-[#8b5cf6]">Ouryie</Link>
+          <Link href="/dashboard" className="text-sm text-gray-400 hover:text-white">Dashboard</Link>
         </div>
       </nav>
 
-      {/* HERO SECTION */}
-      <div className="relative">
-        {/* Blurred background */}
-        {coverUrl && (
-          <div className="absolute inset-0 h-80 overflow-hidden">
-            <img src={coverUrl} alt="" className="w-full h-full object-cover blur-2xl scale-110 opacity-30" />
-            <div className="absolute inset-0 bg-gradient-to-b from-[#0d0d1a]/60 to-[#0d0d1a]" />
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row gap-8 mb-10">
+          {/* Cover */}
+          <div className="w-full md:w-64 flex-shrink-0">
+            <div className="aspect-[2/3] rounded-xl overflow-hidden bg-[#1a1a2e] shadow-2xl">
+              {coverSrc ? (
+                <img src={coverSrc} alt={manga.title} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#8b5cf6]/20 to-[#6d28d9]/20">
+                  <BookOpen className="w-16 h-16 text-[#8b5cf6]/40" />
+                </div>
+              )}
+            </div>
           </div>
-        )}
 
-        <div className="relative max-w-6xl mx-auto px-4 pt-8 pb-6">
-          <div className="flex flex-col md:flex-row gap-8">
-            {/* Cover Image */}
-            <div className="flex-shrink-0">
-              <div className="w-48 md:w-56 rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/10 mx-auto md:mx-0">
-                {coverUrl ? (
-                  <img src={coverUrl} alt={manga.title} className="w-full aspect-[2/3] object-cover" />
-                ) : (
-                  <div className="w-full aspect-[2/3] bg-gradient-to-br from-violet-900/50 to-purple-900/50 flex items-center justify-center">
-                    <BookOpen className="w-12 h-12 text-violet-400" />
-                  </div>
-                )}
-              </div>
-            </div>
+          {/* Info */}
+          <div className="flex-1 min-w-0">
+            <h1 className="text-3xl md:text-4xl font-bold mb-2">{manga.title}</h1>
+            {manga.author && <p className="text-lg text-gray-400 mb-3">by {manga.author}</p>}
 
-            {/* Info */}
-            <div className="flex-1 min-w-0">
-              <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">{manga.title}</h1>
-              <p className="text-gray-400 text-lg mb-1">by {manga.author || 'Unknown'}</p>
-
-              <div className="flex items-center gap-3 mb-4 flex-wrap">
-                <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${
-                  manga.status === 'completed' ? 'bg-blue-500/20 text-blue-300' :
-                  manga.status === 'ongoing' ? 'bg-green-500/20 text-green-300' :
-                  'bg-gray-500/20 text-gray-300'
+            <div className="flex flex-wrap gap-2 mb-4">
+              {manga.status && (
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  manga.status === 'ongoing' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
+                  manga.status === 'completed' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
+                  'bg-gray-700/50 text-gray-300 border border-gray-600'
                 }`}>
-                  {manga.status}
+                  {manga.status.charAt(0).toUpperCase() + manga.status.slice(1)}
                 </span>
-                {totalChapters > 0 && (
-                  <span className="text-gray-500 text-sm">{totalChapters} chapters available</span>
-                )}
-              </div>
-
-              {/* Rating */}
-              <div className="flex items-center gap-1 mb-4">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => (
-                  <button
-                    key={i}
-                    onClick={() => user ? saveRating(i) : null}
-                    onMouseEnter={() => setHoverRating(i)}
-                    onMouseLeave={() => setHoverRating(0)}
-                    className="p-0.5 transition"
-                  >
-                    <Star className={`w-5 h-5 ${
-                      i <= (hoverRating || rating) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'
-                    }`} />
-                  </button>
-                ))}
-                {rating > 0 && <span className="text-gray-400 text-sm ml-2">{rating}/10</span>}
-              </div>
-
-              {/* Action buttons */}
-              <div className="flex items-center gap-3 mb-6 flex-wrap">
-                {/* Continue / Start reading */}
-                {chapters.length > 0 && continueChapter && (
-                  <Link
-                    href={`/manga/${mangaId}/read/${continueChapter.id}`}
-                    className="flex items-center gap-2 px-6 py-3 bg-violet-600 text-white rounded-xl font-medium hover:bg-violet-500 transition shadow-lg shadow-violet-600/25"
-                  >
-                    <Play className="w-5 h-5" />
-                    {progress && progress.current_chapter > 0 
-                      ? `Continue Ch. ${progress.current_chapter + 1}` 
-                      : 'Start Reading'
-                    }
-                  </Link>
-                )}
-
-                {/* Library status */}
-                <div className="relative">
-                  <button
-                    onClick={() => user ? (currentStatus ? setShowStatusMenu(!showStatusMenu) : saveStatus('plan_to_read')) : null}
-                    className={`flex items-center gap-2 px-5 py-3 rounded-xl font-medium transition ${
-                      currentStatus
-                        ? 'bg-white/10 text-white hover:bg-white/20 ring-1 ring-white/10'
-                        : 'bg-emerald-600 text-white hover:bg-emerald-500'
-                    }`}
-                  >
-                    {currentStatus ? (
-                      <>
-                        <currentStatus.icon className={`w-4 h-4 ${currentStatus.color}`} />
-                        {currentStatus.label}
-                        <ChevronDown className="w-4 h-4" />
-                      </>
-                    ) : (
-                      <>
-                        <BookmarkPlus className="w-5 h-5" />
-                        Add to Library
-                      </>
-                    )}
-                  </button>
-
-                  {showStatusMenu && (
-                    <div className="absolute top-full mt-2 left-0 w-48 bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl z-20 overflow-hidden">
-                      {STATUS_OPTIONS.map(opt => (
-                        <button
-                          key={opt.value}
-                          onClick={() => saveStatus(opt.value)}
-                          className={`w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-white/10 transition ${
-                            progress?.status === opt.value ? 'bg-violet-600/20' : ''
-                          }`}
-                        >
-                          <opt.icon className={`w-4 h-4 ${opt.color}`} />
-                          <span className="text-white">{opt.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Progress bar if tracking */}
-              {progress && progress.current_chapter > 0 && totalChapters > 0 && (
-                <div className="mb-6 max-w-md">
-                  <div className="flex items-center justify-between text-sm mb-1">
-                    <span className="text-gray-400">Progress</span>
-                    <span className="text-white font-medium">Ch. {progress.current_chapter} / {totalChapters}</span>
-                  </div>
-                  <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full transition-all"
-                      style={{ width: `${Math.min(100, (progress.current_chapter / totalChapters) * 100)}%` }}
-                    />
-                  </div>
-                </div>
               )}
-
-              {/* Description */}
-              {manga.description && (
-                <div className="max-w-2xl">
-                  <p className={`text-gray-300 text-sm leading-relaxed ${expandDesc ? '' : 'line-clamp-4'}`}>
-                    {manga.description}
-                  </p>
-                  {manga.description.length > 300 && (
-                    <button
-                      onClick={() => setExpandDesc(!expandDesc)}
-                      className="text-violet-400 text-sm mt-1 hover:text-violet-300"
-                    >
-                      {expandDesc ? 'Show less' : 'Read more'}
-                    </button>
-                  )}
-                </div>
+              {totalChapters > 0 && (
+                <span className="px-3 py-1 rounded-full text-sm bg-[#8b5cf6]/20 text-[#8b5cf6] border border-[#8b5cf6]/30">
+                  {chapters.length} readable chapters
+                </span>
               )}
             </div>
+
+            {/* Rating */}
+            <div className="flex items-center gap-1 mb-4">
+              {[...Array(10)].map((_, i) => (
+                <button key={i} onClick={() => rateManga(i + 1)}
+                  onMouseEnter={() => setHoverRating(i + 1)} onMouseLeave={() => setHoverRating(0)}
+                  className="transition-transform hover:scale-125">
+                  <Star size={20} className={`${(hoverRating || userRating) > i ? 'fill-yellow-400 text-yellow-400' : 'text-gray-600'} transition-colors`} />
+                </button>
+              ))}
+              {userRating > 0 && <span className="ml-2 text-sm text-gray-400">{userRating}/10</span>}
+            </div>
+
+            {/* Library actions */}
+            <div className="flex flex-wrap gap-2 mb-6">
+              {statuses.map(s => (
+                <button key={s} onClick={() => saveToLibrary(s)} disabled={savingLibrary}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    libraryStatus === s
+                      ? 'bg-[#8b5cf6] text-white shadow-lg shadow-[#8b5cf6]/25'
+                      : 'bg-[#1a1a2e] text-gray-300 hover:bg-[#252540] border border-gray-700'
+                  }`}>
+                  {s === 'reading' && '📖 Reading'}
+                  {s === 'completed' && '✅ Completed'}
+                  {s === 'plan_to_read' && '📋 Plan to Read'}
+                  {s === 'on_hold' && '⏸️ On Hold'}
+                  {s === 'dropped' && '🗑️ Dropped'}
+                </button>
+              ))}
+            </div>
+
+            {/* Chapter progress */}
+            {libraryStatus && (
+              <div className="bg-[#1a1a2e] rounded-xl p-4 mb-6 border border-gray-800">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-gray-400">Chapter Progress</span>
+                  <span className="text-sm text-[#8b5cf6] font-mono">{currentChapter} / {chapters.length || '?'}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button onClick={() => updateChapter(Math.max(0, currentChapter - 1))}
+                    className="w-8 h-8 rounded-lg bg-[#252540] hover:bg-[#353560] text-white flex items-center justify-center">−</button>
+                  <div className="flex-1 h-2 bg-[#252540] rounded-full overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-[#8b5cf6] to-[#6d28d9] rounded-full transition-all duration-300"
+                      style={{ width: chapters.length ? `${(currentChapter / chapters.length) * 100}%` : '0%' }} />
+                  </div>
+                  <button onClick={() => updateChapter(currentChapter + 1)}
+                    className="w-8 h-8 rounded-lg bg-[#252540] hover:bg-[#353560] text-white flex items-center justify-center">+</button>
+                </div>
+              </div>
+            )}
+
+            {manga.description && (
+              <p className="text-gray-300 leading-relaxed">{manga.description}</p>
+            )}
           </div>
         </div>
-      </div>
 
-      {/* CHAPTER LIST */}
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="bg-[#12121c] rounded-2xl border border-white/5 overflow-hidden">
-          {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
+        {/* Chapters */}
+        <div className="bg-[#12121c] rounded-2xl border border-gray-800 overflow-hidden">
+          <div className="p-6 border-b border-gray-800 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <BookOpen className="w-5 h-5 text-violet-400" />
-              <h2 className="text-xl font-bold text-white">
-                Chapters
-                {totalChapters > 0 && <span className="text-gray-500 font-normal ml-2">({totalChapters})</span>}
-              </h2>
+              <BookOpen className="text-[#8b5cf6]" size={22} />
+              <h2 className="text-xl font-bold">Chapters</h2>
             </div>
-
-            {chapters.length > 10 && (
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                <input
-                  type="text"
-                  placeholder="Search chapters..."
-                  value={chapterSearch}
-                  onChange={e => setChapterSearch(e.target.value)}
-                  className="pl-9 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-violet-500 w-48"
-                />
-              </div>
+            {chapters.length > 0 && (
+              <Link href={`/manga/${id}/read/${chapters[0].id}`}
+                className="flex items-center gap-2 px-5 py-2.5 bg-[#8b5cf6] hover:bg-[#7c3aed] rounded-xl font-medium transition-colors shadow-lg shadow-[#8b5cf6]/25">
+                <Play size={16} /> Start Reading
+              </Link>
             )}
           </div>
 
-          {/* Chapter items */}
-          {chaptersLoading ? (
-            <div className="flex items-center justify-center py-16">
-              <Loader2 className="w-6 h-6 animate-spin text-violet-400 mr-3" />
+          {loadingChapters ? (
+            <div className="p-12 flex items-center justify-center">
+              <Loader2 className="w-6 h-6 text-[#8b5cf6] animate-spin mr-3" />
               <span className="text-gray-400">Loading chapters from MangaDex...</span>
             </div>
-          ) : chaptersError ? (
-            <div className="text-center py-16">
-              <p className="text-gray-400 mb-2">{chaptersError}</p>
-              <a
-                href={`https://mangadex.org/title/${mangaDexUuid || mangaId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-violet-400 hover:text-violet-300 text-sm"
-              >
-                <ExternalLink className="w-4 h-4" />
-                View on MangaDex
-              </a>
-            </div>
-          ) : chapters.length === 0 ? (
-            <div className="text-center py-16">
-              <BookOpen className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-              <p className="text-gray-400 mb-2">No readable chapters available</p>
-              <p className="text-gray-500 text-sm mb-4">This manga may be licensed or not yet uploaded to MangaDex.</p>
-              <a
-                href={`https://mangadex.org/title/${mangaDexUuid || mangaId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-violet-400 hover:text-violet-300 text-sm"
-              >
-                <ExternalLink className="w-4 h-4" />
-                Check MangaDex for updates
+          ) : chapterError ? (
+            <div className="p-12 text-center">
+              <p className="text-gray-400 mb-3">{chapterError}</p>
+              <a href={`https://mangadex.org/title/${extractMangaDexId(manga.image_url || '', id)}`}
+                target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-[#8b5cf6] hover:underline">
+                <ExternalLink size={14} /> View on MangaDex
               </a>
             </div>
           ) : (
-            <>
-              <div className="divide-y divide-white/5">
-                {displayChapters.map(ch => {
-                  const chNum = parseFloat(ch.attributes.chapter || '0');
-                  const isRead = progress && progress.current_chapter >= chNum && chNum > 0;
-
-                  return (
-                    <Link
-                      key={ch.id}
-                      href={`/manga/${mangaId}/read/${ch.id}`}
-                      className={`flex items-center justify-between px-6 py-3.5 hover:bg-white/5 transition group ${
-                        isRead ? 'opacity-60' : ''
-                      }`}
-                    >
-                      <div className="flex items-center gap-4 min-w-0">
-                        {isRead && <Eye className="w-4 h-4 text-violet-400 flex-shrink-0" />}
-                        <div className="min-w-0">
-                          <p className="text-white text-sm font-medium truncate">
-                            Chapter {ch.attributes.chapter || '?'}
-                            {ch.attributes.title ? <span className="text-gray-400 font-normal"> — {ch.attributes.title}</span> : ''}
-                          </p>
-                          <p className="text-gray-500 text-xs mt-0.5">
-                            {ch.attributes.pages} pages
-                            {' · '}
-                            {new Date(ch.attributes.publishAt).toLocaleDateString()}
-                          </p>
-                        </div>
+            <div className="divide-y divide-gray-800/50">
+              {displayedChapters.map((ch, idx) => {
+                const chNum = ch.attributes.chapter || `${idx + 1}`;
+                const group = ch.relationships.find(r => r.type === 'scanlation_group');
+                const isRead = currentChapter >= Number(chNum);
+                return (
+                  <Link key={ch.id} href={`/manga/${id}/read/${ch.id}`}
+                    onClick={() => { if (user && Number(chNum) > currentChapter) updateChapter(Number(chNum)); }}
+                    className={`flex items-center justify-between px-6 py-3.5 hover:bg-[#1a1a2e] transition-colors group ${isRead ? 'opacity-60' : ''}`}>
+                    <div className="flex items-center gap-4 min-w-0">
+                      {isRead ? <CheckCircle size={16} className="text-green-500 flex-shrink-0" /> : <BookOpen size={16} className="text-gray-600 flex-shrink-0" />}
+                      <div className="min-w-0">
+                        <span className="font-medium text-white group-hover:text-[#8b5cf6] transition-colors">
+                          Ch. {chNum}
+                        </span>
+                        {ch.attributes.title && (
+                          <span className="ml-2 text-gray-400 text-sm">— {ch.attributes.title}</span>
+                        )}
+                        {group?.attributes?.name && (
+                          <span className="ml-2 text-xs text-gray-600">[{group.attributes.name}]</span>
+                        )}
                       </div>
-
-                      <span className="px-4 py-1.5 bg-violet-600/20 text-violet-300 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition flex-shrink-0">
-                        Read →
+                    </div>
+                    <div className="flex items-center gap-4 flex-shrink-0 text-sm text-gray-500">
+                      <span>{ch.attributes.pages}p</span>
+                      <span className="hidden sm:block">
+                        <Clock size={12} className="inline mr-1" />
+                        {new Date(ch.attributes.publishAt).toLocaleDateString()}
                       </span>
-                    </Link>
-                  );
-                })}
-              </div>
-
-              {/* Show more / less */}
-              {filteredChapters.length > 20 && (
-                <button
-                  onClick={() => setShowAllChapters(!showAllChapters)}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-4 text-sm text-violet-400 hover:text-violet-300 hover:bg-white/5 transition border-t border-white/5"
-                >
-                  {showAllChapters ? (
-                    <>Show Less <ChevronUp className="w-4 h-4" /></>
-                  ) : (
-                    <>Show All {filteredChapters.length} Chapters <ChevronDown className="w-4 h-4" /></>
-                  )}
+                    </div>
+                  </Link>
+                );
+              })}
+              {chapters.length > 20 && (
+                <button onClick={() => setShowAllChapters(!showAllChapters)}
+                  className="w-full px-6 py-4 text-center text-[#8b5cf6] hover:bg-[#1a1a2e] transition-colors flex items-center justify-center gap-2 font-medium">
+                  {showAllChapters ? <><ChevronUp size={16} /> Show fewer</> : <><ChevronDown size={16} /> Show all {chapters.length} chapters</>}
                 </button>
               )}
-            </>
+            </div>
           )}
         </div>
 
-        {/* MangaDex attribution */}
-        <div className="mt-6 text-center">
-          <p className="text-gray-600 text-xs">
-            Chapter data and pages provided by{' '}
-            <a href="https://mangadex.org" target="_blank" rel="noopener noreferrer" className="text-violet-500 hover:text-violet-400">
-              MangaDex
-            </a>
-            {' '}— an open-source manga platform
-          </p>
-        </div>
+        {/* Footer attribution */}
+        <p className="text-center text-xs text-gray-600 mt-8">
+          Chapter data provided by <a href="https://mangadex.org" target="_blank" rel="noopener noreferrer" className="text-[#8b5cf6] hover:underline">MangaDex</a> — an open-source manga platform
+        </p>
       </div>
     </div>
   );

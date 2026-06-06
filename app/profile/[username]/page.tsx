@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
+import { getCoverUrl } from '@/utils/mangadex';
 import Navbar from '@/components/community/Navbar';
 import Link from 'next/link';
 import { UserPlus, UserMinus, MessageCircle, BookOpen, Users, Hash, MapPin, Globe, Loader2, Edit2, X, Check, Star, Clock, Pause, Play } from 'lucide-react';
@@ -320,7 +321,7 @@ export default function ProfilePage() {
                       <div className="rounded-xl overflow-hidden bg-white/5 border border-white/5 hover:border-violet-500/30 transition">
                         <div className="aspect-[2/3] relative overflow-hidden">
                           {item.manga_series?.image_url ? (
-                            <img src={item.manga_series.image_url} className="w-full h-full object-cover group-hover:scale-105 transition duration-300" alt={item.manga_series?.title} />
+                            <img src={getCoverUrl(item.manga_series.image_url)} className="w-full h-full object-cover group-hover:scale-105 transition duration-300" alt={item.manga_series?.title} />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-violet-900/30 to-purple-900/30">
                               <BookOpen size={24} className="text-gray-600" />

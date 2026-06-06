@@ -4,6 +4,15 @@ import { BookOpen, Users, TrendingUp, Sparkles, Star, ArrowRight, Library, Messa
 
 export const dynamic = 'force-dynamic';
 
+// Proxy MangaDex cover images to avoid hotlink blocking
+function proxyCover(url: string | null | undefined): string {
+  if (!url) return '';
+  if (url.includes('mangadex.org')) {
+    return `/api/manga?action=cover&url=${encodeURIComponent(url)}`;
+  }
+  return url;
+}
+
 export default async function HomePage() {
   const supabase = await createClient();
 
@@ -162,7 +171,7 @@ export default async function HomePage() {
                   <div className="aspect-[2/3] rounded-xl overflow-hidden mb-3 ring-1 ring-white/10 group-hover:ring-violet-500/50 transition-all shadow-lg group-hover:shadow-violet-600/20 group-hover:scale-105 transition-all duration-200">
                     {manga.image_url ? (
                       <img
-                        src={manga.image_url}
+                        src={proxyCover(manga.image_url)}
                         alt={manga.title}
                         className="w-full h-full object-cover"
                         loading="lazy"
@@ -208,7 +217,7 @@ export default async function HomePage() {
                     </span>
                     <div className="w-16 h-24 rounded-lg overflow-hidden ring-1 ring-white/10">
                       {manga.image_url ? (
-                        <img src={manga.image_url} alt={manga.title} className="w-full h-full object-cover" loading="lazy" />
+                        <img src={proxyCover(manga.image_url)} alt={manga.title} className="w-full h-full object-cover" loading="lazy" />
                       ) : (
                         <div className="w-full h-full bg-gradient-to-br from-violet-900/50 to-purple-900/50 flex items-center justify-center">
                           <BookOpen className="w-5 h-5 text-violet-400" />

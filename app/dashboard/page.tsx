@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { getCoverUrl } from '@/utils/mangadex';
 import Link from 'next/link';
 import OuryieLogo from '@/components/OuryieLogo';
 import { BookOpen, Plus, Star, Search, Filter, LayoutGrid, List, Users, MessageCircle, Settings, LogOut, Book, TrendingUp, ChevronDown, X } from 'lucide-react';
@@ -217,7 +218,7 @@ export default function DashboardPage() {
             {filtered.map((entry) => {
               const manga = entry.manga;
               if (!manga) return null;
-              const cover = manga.image_url || manga.cover_image_url;
+              const cover = getCoverUrl(manga.image_url || manga.cover_image_url || null);
               const progress = manga.chapter_count ? Math.round((entry.current_chapter / manga.chapter_count) * 100) : 0;
               const statusInfo = STATUS_TABS.find(t => t.value === entry.status);
 
@@ -265,7 +266,7 @@ export default function DashboardPage() {
             {filtered.map((entry) => {
               const manga = entry.manga;
               if (!manga) return null;
-              const cover = manga.image_url || manga.cover_image_url;
+              const cover = getCoverUrl(manga.image_url || manga.cover_image_url || null);
               const progress = manga.chapter_count ? Math.round((entry.current_chapter / manga.chapter_count) * 100) : 0;
 
               return (

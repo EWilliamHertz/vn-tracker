@@ -1,115 +1,46 @@
-// MangaDex API client — all calls are client-side (no server caching of manga content)
-const BASE = 'https://api.mangadex.org';
+// MangaDex utilities — all API calls go through our server proxy to avoid CORS/hotlink issues
 
-export interface MDChapter {
-  id: string;
-  attributes: {
-    chapter: string | null;
-    title: string | null;
-    pages: number;
-    publishAt: string;
-    translatedLanguage: string;
-    externalUrl: string | null;
-    volume: string | null;
+/** Extract the real MangaDex manga UUID from a cover image URL */
+export function extractMangaDexId(imageUrl: string, fallbackId: string): string {
+  if (imageUrl && imageUrl.includes('covers/')) {
+    const parts = imageUrl.split('covers/');
+    if (parts.length > 1) {
+      const uuid = parts[1].split('/')[0];
+      if (uuid && uuid.length === 36) return uuid;
+    }
+  }
+  return fallbackId;
+}
+
+/** Get a proxied cover image URL to avoid MangaDex hotlink blocking */
+export function getCoverUrl(imageUrl: string | null | undefined): string {
+  if (!imageUrl) return '';
+  if (imageUrl.includes('mangadex.org')) {
+    return `/api/manga?action=cover&url=${encodeURIComponent(imageUrl)}`;
+  }
+  return imageUrl;
+}
+
+/** Fetch chapters for a manga via our server proxy */
+export async function fetchChapters(mangaDexId: string, offset = 0, limit = 100) {
+  const res = await fetch(`/api/manga?action=chapters&mangadexId=${mangaDexId}&offset=${offset}&limit=${limit}`);
+  if (!res.ok) return { data: [], total: 0 };
+  return res.json();
+}
+
+/** Fetch page image URLs for a chapter via our server proxy */
+export async function fetchChapterPages(chapterId: string): Promise<{ pages: string[]; pagesHD: string[] }> {
+  const res = await fetch(`/api/manga?action=pages&chapterId=${chapterId}`);
+  if (!res.ok) return { pages: [], pagesHD: [] };
+  const data = await res.json();
+
+  const baseUrl = data.baseUrl || '';
+  const hash = data.chapter?.hash || '';
+  const files = data.chapter?.data || [];
+  const filesSaver = data.chapter?.dataSaver || [];
+
+  return {
+    pagesHD: files.map((f: string) => `${baseUrl}/data/${hash}/${f}`),
+    pages: filesSaver.map((f: string) => `${baseUrl}/data-saver/${hash}/${f}`),
   };
-  relationships: Array<{
-    id: string;
-    type: string;
-    attributes?: Record<string, unknown>;
-  }>;
-}
-
-export interface ChapterFeed {
-  result: string;
-  data: MDChapter[];
-  total: number;
-  offset: number;
-  limit: number;
-}
-
-export interface AtHomeData {
-  baseUrl: string;
-  hash: string;
-  pages: string[];      // full quality
-  dataSaver: string[];   // compressed
-}
-
-/** Fetch English chapters for a manga, sorted by chapter number */
-export async function fetchChapters(
-  mangaId: string,
-  offset = 0,
-  limit = 96
-): Promise<ChapterFeed | null> {
-  try {
-    const url = `${BASE}/manga/${mangaId}/feed?translatedLanguage[]=en&order[chapter]=asc&limit=${limit}&offset=${offset}&includes[]=scanlation_group`;
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    return res.json();
-  } catch {
-    return null;
-  }
-}
-
-/** Fetch page image URLs for a specific chapter */
-export async function fetchPages(chapterId: string): Promise<AtHomeData | null> {
-  try {
-    const res = await fetch(`${BASE}/at-home/server/${chapterId}`);
-    if (!res.ok) return null;
-    const data = await res.json();
-    return {
-      baseUrl: data.baseUrl,
-      hash: data.chapter.hash,
-      pages: data.chapter.data,
-      dataSaver: data.chapter.dataSaver,
-    };
-  } catch {
-    return null;
-  }
-}
-
-/** Build full URL for a manga page image */
-export function pageUrl(
-  baseUrl: string,
-  hash: string,
-  filename: string,
-  quality: 'full' | 'saver' = 'full'
-): string {
-  const dir = quality === 'saver' ? 'data-saver' : 'data';
-  return `${baseUrl}/${dir}/${hash}/${filename}`;
-}
-
-/** Get scanlation group name from chapter relationships */
-export function getGroupName(ch: MDChapter): string {
-  for (const rel of ch.relationships) {
-    if (rel.type === 'scanlation_group' && rel.attributes) {
-      return (rel.attributes.name as string) || 'Unknown Group';
-    }
-  }
-  return 'Unknown Group';
-}
-
-/** Deduplicate chapters — keep one per chapter number (prefer more pages) */
-export function dedupeChapters(chapters: MDChapter[]): MDChapter[] {
-  const map = new Map<string, MDChapter>();
-  for (const ch of chapters) {
-    const num = ch.attributes.chapter || '0';
-    const existing = map.get(num);
-    if (!existing || ch.attributes.pages > existing.attributes.pages) {
-      map.set(num, ch);
-    }
-  }
-  return Array.from(map.values()).sort((a, b) => {
-    const na = parseFloat(a.attributes.chapter || '0');
-    const nb = parseFloat(b.attributes.chapter || '0');
-    return na - nb;
-  });
-}
-
-/** Extract the real MangaDex manga UUID from a cover image URL.
- *  Cover URLs look like: https://uploads.mangadex.org/covers/{MANGA_UUID}/{filename}
- *  This lets us link DB records (which may have Supabase-generated UUIDs) to MangaDex. */
-export function extractMangaDexId(imageUrl: string | null | undefined): string | null {
-  if (!imageUrl) return null;
-  const match = imageUrl.match(/covers\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\//i);
-  return match ? match[1] : null;
 }
