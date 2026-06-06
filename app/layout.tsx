@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
+import MessageWidget from "@/components/community/MessageWidget";
 import "./globals.css";
 
 const defaultUrl = process.env.VERCEL_URL
@@ -11,7 +12,7 @@ const defaultUrl = process.env.VERCEL_URL
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
   title: "Ouryie - Manga & Visual Novel Community",
-  description: "Track, discover, and connect with the manga & visual novel community. Organize your reading list and join fellow enthusiasts.",
+  description: "Track, discover, and connect with the manga & visual novel community. Join groups, message friends, and organize your reading list.",
 };
 
 const geistSans = Geist({
@@ -30,11 +31,12 @@ export default function RootLayout({
       <body className={`${geistSans.className} antialiased`}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
-          enableSystem
+          defaultTheme="dark"
+          enableSystem={false}
           disableTransitionOnChange
         >
           {children}
+          <MessageWidget />
           <Toaster position="top-right" richColors />
         </ThemeProvider>
       </body>
