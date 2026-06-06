@@ -133,9 +133,17 @@ export default async function AdminPage({ searchParams }: { searchParams: { succ
               <p className="text-xs text-neutral-400">Authenticated: {user.email}</p>
             </div>
           </div>
-          <Link href="/" className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 rounded-xl text-sm font-semibold transition-all">
-            Go to Library
-          </Link>
+          <div className="flex gap-2">
+            <Link 
+              href="/admin/docs" 
+              className="px-4 py-2 bg-[#8b5cf6] hover:bg-[#7c3aed] rounded-xl text-sm font-semibold transition-all"
+            >
+              📚 Documentation
+            </Link>
+            <Link href="/" className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 rounded-xl text-sm font-semibold transition-all">
+              Go to Library
+            </Link>
+          </div>
         </div>
 
         {/* Notifications */}
