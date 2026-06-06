@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { titleToSlug } from '@/utils/slug';
 import { BookOpen, Search, Filter, X } from 'lucide-react';
 
 interface Manga {
@@ -220,7 +221,7 @@ export default function BrowsePage() {
                 {filteredManga.map((title) => (
                   <Link 
                     key={title.id}
-                    href={`/manga/${title.id}`}
+                    href={`/manga/${titleToSlug(title.title)}`}
                     className="group"
                   >
                     <div className="bg-[#23232f] border border-gray-800 rounded-lg overflow-hidden hover:border-[#8b5cf6] transition-all h-full flex flex-col">

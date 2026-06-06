@@ -1,6 +1,9 @@
 import Link from 'next/link';
 import { createClient } from '../utils/supabase/server';
+import { titleToSlug } from '../utils/slug';
 import { BookOpen, Library, Heart, Users, Zap } from 'lucide-react';
+
+export const dynamic = 'force-dynamic';
 
 export default async function LandingPage() {
   const supabase = await createClient();
@@ -138,7 +141,7 @@ export default async function LandingPage() {
               {titles.map((title: any) => (
                 <Link 
                   key={title.id}
-                  href={`/manga/${title.id}`}
+                  href={`/manga/${titleToSlug(title.title)}`}
                   className="group"
                 >
                   <div className="bg-[#23232f] border border-gray-800 rounded-lg overflow-hidden hover:border-[#8b5cf6] transition-all h-full flex flex-col">

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { titleToSlug } from '@/utils/slug';
 import { BookOpen, ArrowLeft, Star, Users, Calendar, Book } from 'lucide-react';
 
 interface Manga {
@@ -31,7 +32,7 @@ interface Chapter {
 
 export default function MangaDetailPage() {
   const params = useParams();
-  const mangaId = params.id as string;
+  const slug = params.slug as string;
   
   const [manga, setManga] = useState<Manga | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
@@ -45,21 +46,31 @@ export default function MangaDetailPage() {
       try {
         setLoading(true);
         
-        // Fetch manga details
-        const { data: mangaData, error: mangaError } = await supabase
+        // Fetch all manga and find by slug
+        const { data: allManga, error: fetchError } = await supabase
           .from('manga_series')
-          .select('*')
-          .eq('id', mangaId)
-          .single();
+          .select('*');
 
-        if (mangaError) throw mangaError;
-        setManga(mangaData);
+        if (fetchError) throw fetchError;
+
+        // Find manga by matching slug
+        const foundManga = allManga?.find(
+          (m: Manga) => titleToSlug(m.title) === slug
+        );
+
+        if (!foundManga) {
+          setError('Manga not found');
+          setLoading(false);
+          return;
+        }
+
+        setManga(foundManga);
 
         // Fetch chapters
         const { data: chaptersData, error: chaptersError } = await supabase
           .from('chapters')
           .select('*')
-          .eq('manga_id', mangaId)
+          .eq('manga_id', foundManga.id)
           .order('chapter_number', { ascending: true });
 
         if (chaptersError) throw chaptersError;
@@ -72,10 +83,10 @@ export default function MangaDetailPage() {
       }
     };
 
-    if (mangaId) {
+    if (slug) {
       fetchMangaData();
     }
-  }, [mangaId]);
+  }, [slug]);
 
   if (loading) {
     return (
