@@ -41,7 +41,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <Link href="/" className="flex items-center gap-2">
             <div className="text-2xl">🎌</div>
-            <span className="text-xl font-bold text-white">Cozy Haven</span>
+            <span className="text-xl font-bold text-white">Ouryie</span>
           </Link>
           <div className="flex gap-4">
             <Link href="/discover" className="text-slate-300 hover:text-white transition">
@@ -80,7 +80,7 @@ export default function HomePage() {
       {/* Features Section */}
       <section className="bg-slate-800/50 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-4xl font-bold text-white text-center mb-16">Why Cozy Haven?</h2>
+          <h2 className="text-4xl font-bold text-white text-center mb-16">Why Ouryie?</h2>
           
           <div className="grid md:grid-cols-3 gap-8">
             {/* Feature 1 */}
@@ -195,7 +195,7 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="border-t border-slate-700 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-slate-400">
-          <p>© 2024 Cozy Haven. Built with ❤️ for manga and VN enthusiasts.</p>
+          <p>© 2024 Ouryie. Built with ❤️ for manga and VN enthusiasts.</p>
         </div>
       </footer>
     </div>

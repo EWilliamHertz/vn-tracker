@@ -32,7 +32,7 @@ export default async function DashboardPage() {
       <header className="border-b border-gray-800 bg-[#23232f]">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/" className="text-2xl font-bold text-[#8b5cf6]">
-            Cozy Haven
+            Ouryie
           </Link>
           <div className="flex items-center gap-4">
             <span className="text-gray-400">{user.email}</span>
