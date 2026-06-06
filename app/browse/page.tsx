@@ -29,7 +29,7 @@ export default function BrowsePage() {
   const supabase = createClient();
 
   useEffect(() => {
-    document.title = 'Ouryie — Browse Manga';
+    document.title = 'Browse Manga';
     const fetchManga = async () => {
       setLoading(true);
       const { data, error } = await supabase

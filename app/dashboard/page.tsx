@@ -49,7 +49,7 @@ export default function DashboardPage() {
   const supabase = createClient();
 
   useEffect(() => {
-    document.title = 'Ouryie — My Library';
+    document.title = 'My Library';
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {

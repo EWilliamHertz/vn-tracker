@@ -1,4 +1,5 @@
-// MangaDex utilities — all API calls go through our server proxy to avoid CORS/hotlink issues
+// MangaDex utilities — all API calls go through /api/manga server proxy
+// This avoids CORS, hotlink blocking, and Cloudflare 403 on CDN nodes
 
 /** Extract the real MangaDex manga UUID from a cover image URL */
 export function extractMangaDexId(imageUrl: string, fallbackId: string): string {
@@ -28,19 +29,16 @@ export async function fetchChapters(mangaDexId: string, offset = 0, limit = 100)
   return res.json();
 }
 
-/** Fetch page image URLs for a chapter via our server proxy */
-export async function fetchChapterPages(chapterId: string): Promise<{ pages: string[]; pagesHD: string[] }> {
+/** Fetch page image URLs for a chapter via our server proxy.
+ *  Server returns pre-built proxied URLs — each page loads through /api/manga?action=image
+ *  which fetches from uploads.mangadex.org with proper headers. */
+export async function fetchChapterPages(chapterId: string): Promise<{ pages: string[]; pagesHD: string[]; totalPages: number }> {
   const res = await fetch(`/api/manga?action=pages&chapterId=${chapterId}`);
-  if (!res.ok) return { pages: [], pagesHD: [] };
+  if (!res.ok) return { pages: [], pagesHD: [], totalPages: 0 };
   const data = await res.json();
-
-  const baseUrl = data.baseUrl || '';
-  const hash = data.chapter?.hash || '';
-  const files = data.chapter?.data || [];
-  const filesSaver = data.chapter?.dataSaver || [];
-
   return {
-    pagesHD: files.map((f: string) => `${baseUrl}/data/${hash}/${f}`),
-    pages: filesSaver.map((f: string) => `${baseUrl}/data-saver/${hash}/${f}`),
+    pages: data.pages || [],
+    pagesHD: data.pagesHD || [],
+    totalPages: data.totalPages || 0,
   };
 }
