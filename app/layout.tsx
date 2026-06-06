@@ -11,8 +11,18 @@ const defaultUrl = process.env.VERCEL_URL
 
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "Ouryie - Manga & Visual Novel Community",
-  description: "Track, discover, and connect with the manga & visual novel community. Join groups, message friends, and organize your reading list.",
+  title: "Ouryie — Manga & Visual Novel Community",
+  description: "Track your manga reading progress, connect with fans, join communities, and discover your next favourite series.",
+  icons: {
+    icon: '/logo.svg',
+    apple: '/logo.svg',
+  },
+  openGraph: {
+    title: "Ouryie — Manga & Visual Novel Community",
+    description: "Track, discover, and connect with the manga & visual novel community.",
+    siteName: "Ouryie",
+    type: "website",
+  },
 };
 
 const geistSans = Geist({

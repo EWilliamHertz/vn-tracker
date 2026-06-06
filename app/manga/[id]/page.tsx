@@ -4,14 +4,16 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { BookOpen, ArrowLeft, Star, Users, Calendar, Book, Plus, Check, ChevronDown, Minus, Heart, Share2, ExternalLink, Bookmark } from 'lucide-react';
+import OuryieLogo from '@/components/OuryieLogo';
+import { BookOpen, ArrowLeft, Star, Users, Calendar, Book, Plus, Check, ChevronDown, Minus, Heart, Share2, ExternalLink, Bookmark, X } from 'lucide-react';
 
 interface Manga {
-  id: number;
+  id: string;
   title: string;
   author: string;
   description?: string;
   image_url?: string;
+  cover_image_url?: string;
   rating?: number;
   status?: string;
   chapter_count?: number;
@@ -23,7 +25,7 @@ interface Manga {
 interface ReadingProgress {
   id: string;
   user_id: string;
-  manga_id: number;
+  manga_id: string;
   status: string;
   current_chapter: number;
   current_page: number;
@@ -36,16 +38,16 @@ interface ReadingProgress {
 }
 
 const STATUS_OPTIONS = [
-  { value: 'reading', label: 'Reading', color: 'bg-green-500', bg: 'bg-green-900/30 text-green-300 border-green-700' },
-  { value: 'completed', label: 'Completed', color: 'bg-blue-500', bg: 'bg-blue-900/30 text-blue-300 border-blue-700' },
-  { value: 'plan_to_read', label: 'Plan to Read', color: 'bg-yellow-500', bg: 'bg-yellow-900/30 text-yellow-300 border-yellow-700' },
-  { value: 'on_hold', label: 'On Hold', color: 'bg-orange-500', bg: 'bg-orange-900/30 text-orange-300 border-orange-700' },
-  { value: 'dropped', label: 'Dropped', color: 'bg-red-500', bg: 'bg-red-900/30 text-red-300 border-red-700' },
+  { value: 'reading', label: 'Reading', emoji: '📖', color: 'bg-green-500', bg: 'bg-green-900/30 text-green-300 border-green-700' },
+  { value: 'completed', label: 'Completed', emoji: '✅', color: 'bg-blue-500', bg: 'bg-blue-900/30 text-blue-300 border-blue-700' },
+  { value: 'plan_to_read', label: 'Plan to Read', emoji: '📋', color: 'bg-yellow-500', bg: 'bg-yellow-900/30 text-yellow-300 border-yellow-700' },
+  { value: 'on_hold', label: 'On Hold', emoji: '⏸️', color: 'bg-orange-500', bg: 'bg-orange-900/30 text-orange-300 border-orange-700' },
+  { value: 'dropped', label: 'Dropped', emoji: '❌', color: 'bg-red-500', bg: 'bg-red-900/30 text-red-300 border-red-700' },
 ];
 
 export default function MangaDetailPage() {
   const params = useParams();
-  const mangaId = Number(params.id);
+  const mangaId = params.id as string;
 
   const [manga, setManga] = useState<Manga | null>(null);
   const [loading, setLoading] = useState(true);
@@ -58,6 +60,7 @@ export default function MangaDetailPage() {
   const [chapterInput, setChapterInput] = useState('');
   const [userRating, setUserRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
+  const [imgError, setImgError] = useState(false);
 
   const supabase = createClient();
 
@@ -66,12 +69,19 @@ export default function MangaDetailPage() {
     setTimeout(() => setToast(null), 3000);
   };
 
+  // Set dynamic tab title
+  useEffect(() => {
+    if (manga?.title) {
+      document.title = `Ouryie — ${manga.title}`;
+    }
+    return () => { document.title = 'Ouryie — Manga & Visual Novel Community'; };
+  }, [manga?.title]);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
 
-        // Fetch manga by ID
         const { data: mangaData, error: fetchError } = await supabase
           .from('manga_series')
           .select('*')
@@ -86,11 +96,9 @@ export default function MangaDetailPage() {
 
         setManga(mangaData);
 
-        // Check auth
         const { data: { user: authUser } } = await supabase.auth.getUser();
         setUser(authUser);
 
-        // Load reading progress if logged in
         if (authUser) {
           const { data: progressData } = await supabase
             .from('reading_progress')
@@ -122,7 +130,6 @@ export default function MangaDetailPage() {
 
     try {
       if (progress) {
-        // Update existing
         const { data, error } = await supabase
           .from('reading_progress')
           .update({
@@ -139,7 +146,6 @@ export default function MangaDetailPage() {
         setProgress(data);
         showToast(`Status updated to "${STATUS_OPTIONS.find(s => s.value === status)?.label}"`);
       } else {
-        // Insert new
         const { data, error } = await supabase
           .from('reading_progress')
           .insert({
@@ -237,31 +243,31 @@ export default function MangaDetailPage() {
     }
   };
 
+  const coverUrl = manga?.image_url || manga?.cover_image_url;
   const progressPercent = progress && manga?.chapter_count
     ? Math.round((progress.current_chapter / manga.chapter_count) * 100)
     : 0;
-
   const currentStatus = STATUS_OPTIONS.find(s => s.value === progress?.status);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#1a1a24] text-white">
-        <nav className="border-b border-gray-800 bg-[#23232f]/95 sticky top-0 z-50 backdrop-blur">
+      <div className="min-h-screen bg-[#1a1a2e] text-white">
+        <nav className="border-b border-gray-800 bg-[#12121c]/95 sticky top-0 z-50 backdrop-blur">
           <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
             <Link href="/browse" className="flex items-center gap-2 text-gray-400 hover:text-white transition-all">
               <ArrowLeft className="w-4 h-4" /> Back
             </Link>
-            <Link href="/" className="text-2xl font-bold text-[#8b5cf6]">Ouryie</Link>
-            <div className="w-16"></div>
+            <Link href="/"><OuryieLogo size={28} /></Link>
+            <div className="w-16" />
           </div>
         </nav>
         <div className="max-w-6xl mx-auto px-6 py-12">
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="h-[450px] bg-gray-800 rounded-2xl animate-pulse"></div>
+            <div className="h-[450px] bg-gray-800/50 rounded-2xl animate-pulse" />
             <div className="md:col-span-2 space-y-4">
-              <div className="h-10 bg-gray-800 rounded-xl w-3/4 animate-pulse"></div>
-              <div className="h-5 bg-gray-800 rounded w-1/3 animate-pulse"></div>
-              <div className="h-32 bg-gray-800 rounded-xl animate-pulse mt-6"></div>
+              <div className="h-10 bg-gray-800/50 rounded-xl w-3/4 animate-pulse" />
+              <div className="h-5 bg-gray-800/50 rounded w-1/3 animate-pulse" />
+              <div className="h-32 bg-gray-800/50 rounded-xl animate-pulse mt-6" />
             </div>
           </div>
         </div>
@@ -271,14 +277,14 @@ export default function MangaDetailPage() {
 
   if (error || !manga) {
     return (
-      <div className="min-h-screen bg-[#1a1a24] text-white">
-        <nav className="border-b border-gray-800 bg-[#23232f]/95 sticky top-0 z-50 backdrop-blur">
+      <div className="min-h-screen bg-[#1a1a2e] text-white">
+        <nav className="border-b border-gray-800 bg-[#12121c]/95 sticky top-0 z-50 backdrop-blur">
           <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
             <Link href="/browse" className="flex items-center gap-2 text-gray-400 hover:text-white transition-all">
               <ArrowLeft className="w-4 h-4" /> Back
             </Link>
-            <Link href="/" className="text-2xl font-bold text-[#8b5cf6]">Ouryie</Link>
-            <div className="w-16"></div>
+            <Link href="/"><OuryieLogo size={28} /></Link>
+            <div className="w-16" />
           </div>
         </nav>
         <div className="max-w-6xl mx-auto px-6 py-24 text-center">
@@ -294,21 +300,22 @@ export default function MangaDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#1a1a24] text-white">
+    <div className="min-h-screen bg-[#1a1a2e] text-white">
       {/* Toast */}
       {toast && (
-        <div className="fixed top-6 right-6 z-[100] bg-[#8b5cf6] text-white px-6 py-3 rounded-xl shadow-2xl animate-in slide-in-from-top font-medium text-sm">
+        <div className="fixed top-6 right-6 z-[100] bg-[#8b5cf6] text-white px-6 py-3 rounded-xl shadow-2xl font-medium text-sm flex items-center gap-3">
           {toast}
+          <button onClick={() => setToast(null)}><X className="w-4 h-4" /></button>
         </div>
       )}
 
       {/* Navigation */}
-      <nav className="border-b border-gray-800 bg-[#23232f]/95 sticky top-0 z-50 backdrop-blur">
+      <nav className="border-b border-gray-800 bg-[#12121c]/95 sticky top-0 z-50 backdrop-blur">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/browse" className="flex items-center gap-2 text-gray-400 hover:text-white transition-all">
             <ArrowLeft className="w-4 h-4" /> Browse
           </Link>
-          <Link href="/" className="text-2xl font-bold text-[#8b5cf6]">Ouryie</Link>
+          <Link href="/"><OuryieLogo size={28} /></Link>
           <div className="flex items-center gap-3">
             <button onClick={shareTitle} className="text-gray-400 hover:text-white transition-all" title="Share">
               <Share2 className="w-5 h-5" />
@@ -322,16 +329,19 @@ export default function MangaDetailPage() {
         </div>
       </nav>
 
-      {/* Hero Banner */}
-      <div className="relative h-48 md:h-64 overflow-hidden bg-gradient-to-r from-[#8b5cf6]/30 to-[#6d28d9]/30">
-        {manga.image_url && (
+      {/* Hero Banner — blurred cover bg */}
+      <div className="relative h-48 md:h-64 overflow-hidden">
+        {coverUrl && !imgError ? (
           <img
-            src={manga.image_url}
+            src={coverUrl}
             alt=""
-            className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-110"
+            className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-30 scale-110"
+            onError={() => setImgError(true)}
           />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-r from-[#8b5cf6]/20 to-[#6d28d9]/20" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#1a1a24]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#1a1a2e]" />
       </div>
 
       {/* Main Content */}
@@ -340,18 +350,19 @@ export default function MangaDetailPage() {
           {/* Cover */}
           <div className="md:col-span-1">
             <div className="rounded-2xl overflow-hidden shadow-2xl border-2 border-gray-800 bg-gray-900 sticky top-24">
-              {manga.image_url ? (
+              {coverUrl && !imgError ? (
                 <img
-                  src={manga.image_url}
+                  src={coverUrl}
                   alt={manga.title}
                   className="w-full h-auto object-cover"
-                  onError={(e) => {
-                    e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="400"%3E%3Crect fill="%23333" width="300" height="400"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="white" font-size="14"%3ENo Cover%3C/text%3E%3C/svg%3E';
-                  }}
+                  onError={() => setImgError(true)}
                 />
               ) : (
-                <div className="w-full h-96 bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center">
-                  <BookOpen className="w-16 h-16 text-gray-500" />
+                <div className="w-full aspect-[3/4] bg-gradient-to-br from-[#8b5cf6]/30 to-[#6d28d9]/30 flex items-center justify-center">
+                  <div className="text-center">
+                    <BookOpen className="w-16 h-16 text-[#8b5cf6] mx-auto mb-3" />
+                    <p className="text-gray-300 text-sm font-medium px-4">{manga.title}</p>
+                  </div>
                 </div>
               )}
             </div>
@@ -359,7 +370,6 @@ export default function MangaDetailPage() {
 
           {/* Details */}
           <div className="md:col-span-2 space-y-6 pb-12">
-            {/* Title */}
             <div>
               <h1 className="text-3xl md:text-4xl font-bold mb-3 leading-tight">{manga.title}</h1>
               <div className="flex flex-wrap items-center gap-3">
@@ -367,12 +377,6 @@ export default function MangaDetailPage() {
                   <div className="flex items-center gap-2 text-gray-400">
                     <Users className="w-4 h-4" />
                     <span>{manga.author}</span>
-                  </div>
-                )}
-                {manga.rating && (
-                  <div className="flex items-center gap-1.5 bg-yellow-900/30 text-yellow-300 px-3 py-1 rounded-full text-sm border border-yellow-800">
-                    <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
-                    <span className="font-semibold">{manga.rating.toFixed(1)}</span>
                   </div>
                 )}
                 {manga.status && (
@@ -386,12 +390,12 @@ export default function MangaDetailPage() {
                     {manga.status.charAt(0).toUpperCase() + manga.status.slice(1)}
                   </span>
                 )}
-                {manga.chapter_count && (
+                {manga.chapter_count ? (
                   <span className="text-gray-400 text-sm flex items-center gap-1">
                     <Book className="w-3.5 h-3.5" />
                     {manga.chapter_count} chapters
                   </span>
-                )}
+                ) : null}
               </div>
             </div>
 
@@ -411,7 +415,7 @@ export default function MangaDetailPage() {
                     {progress ? (
                       <>
                         <Bookmark className="w-4 h-4" />
-                        {currentStatus?.label}
+                        {currentStatus?.emoji} {currentStatus?.label}
                         <ChevronDown className="w-4 h-4" />
                       </>
                     ) : (
@@ -422,9 +426,8 @@ export default function MangaDetailPage() {
                     )}
                   </button>
 
-                  {/* Status Dropdown */}
                   {showStatusMenu && (
-                    <div className="absolute top-14 left-0 bg-[#23232f] border border-gray-700 rounded-xl shadow-2xl py-2 w-52 z-50">
+                    <div className="absolute top-14 left-0 bg-[#23232f] border border-gray-700 rounded-xl shadow-2xl py-2 w-56 z-50">
                       {STATUS_OPTIONS.map(opt => (
                         <button
                           key={opt.value}
@@ -433,6 +436,7 @@ export default function MangaDetailPage() {
                             progress?.status === opt.value ? 'text-[#8b5cf6]' : 'text-gray-300'
                           }`}
                         >
+                          <span>{opt.emoji}</span>
                           <div className={`w-2.5 h-2.5 rounded-full ${opt.color}`} />
                           {opt.label}
                           {progress?.status === opt.value && <Check className="w-4 h-4 ml-auto" />}
@@ -465,14 +469,14 @@ export default function MangaDetailPage() {
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-xl font-semibold transition-all border border-gray-700"
                 >
-                  <ExternalLink className="w-4 h-4" /> Read on Source
+                  <ExternalLink className="w-4 h-4" /> Read on MangaDex
                 </a>
               )}
             </div>
 
             {/* Reading Progress Tracker */}
             {progress && (
-              <div className="bg-[#23232f] border border-gray-800 rounded-2xl p-6 space-y-5">
+              <div className="bg-[#12121c] border border-gray-800 rounded-2xl p-6 space-y-5">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-lg flex items-center gap-2">
                     <Book className="w-5 h-5 text-[#8b5cf6]" />
@@ -483,17 +487,15 @@ export default function MangaDetailPage() {
                   ) : null}
                 </div>
 
-                {/* Progress Bar */}
                 {manga.chapter_count ? (
                   <div className="w-full h-3 bg-gray-800 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-[#8b5cf6] to-[#6d28d9] rounded-full transition-all duration-500"
-                      style={{ width: `${progressPercent}%` }}
+                      style={{ width: `${Math.min(progressPercent, 100)}%` }}
                     />
                   </div>
                 ) : null}
 
-                {/* Chapter Control */}
                 <div className="flex items-center gap-4">
                   <span className="text-sm text-gray-400 whitespace-nowrap">Chapter:</span>
                   <div className="flex items-center gap-2">
@@ -518,22 +520,21 @@ export default function MangaDetailPage() {
                       <Plus className="w-4 h-4" />
                     </button>
                   </div>
-                  {manga.chapter_count && (
+                  {manga.chapter_count ? (
                     <span className="text-sm text-gray-500">/ {manga.chapter_count}</span>
-                  )}
+                  ) : null}
                 </div>
 
-                {/* Your Rating */}
                 <div className="flex items-center gap-4">
                   <span className="text-sm text-gray-400">Your Rating:</span>
-                  <div className="flex gap-1">
+                  <div className="flex gap-0.5">
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
                       <button
                         key={n}
                         onMouseEnter={() => setHoverRating(n)}
                         onMouseLeave={() => setHoverRating(0)}
                         onClick={() => updateRating(n)}
-                        className="transition-all hover:scale-125"
+                        className="transition-all hover:scale-125 p-0.5"
                       >
                         <Star
                           className={`w-5 h-5 transition-colors ${
@@ -548,7 +549,6 @@ export default function MangaDetailPage() {
                   {userRating > 0 && <span className="text-sm text-yellow-400 font-semibold">{userRating}/10</span>}
                 </div>
 
-                {/* Last updated */}
                 {progress.updated_at && (
                   <p className="text-xs text-gray-600">
                     Updated {new Date(progress.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -559,7 +559,7 @@ export default function MangaDetailPage() {
 
             {/* Description */}
             {manga.description && (
-              <div className="bg-[#23232f] border border-gray-800 rounded-2xl p-6">
+              <div className="bg-[#12121c] border border-gray-800 rounded-2xl p-6">
                 <h3 className="text-lg font-semibold mb-3">About</h3>
                 <p className="text-gray-300 leading-relaxed text-sm whitespace-pre-line">{manga.description}</p>
               </div>
@@ -567,20 +567,20 @@ export default function MangaDetailPage() {
 
             {/* Info Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {manga.chapter_count && (
-                <div className="bg-[#23232f] border border-gray-800 rounded-xl p-4">
+              {manga.chapter_count ? (
+                <div className="bg-[#12121c] border border-gray-800 rounded-xl p-4">
                   <p className="text-xs text-gray-500 mb-1">Chapters</p>
                   <p className="text-xl font-bold">{manga.chapter_count}</p>
                 </div>
-              )}
+              ) : null}
               {manga.source && (
-                <div className="bg-[#23232f] border border-gray-800 rounded-xl p-4">
+                <div className="bg-[#12121c] border border-gray-800 rounded-xl p-4">
                   <p className="text-xs text-gray-500 mb-1">Source</p>
-                  <p className="text-sm font-semibold truncate">{manga.source}</p>
+                  <p className="text-sm font-semibold capitalize">{manga.source}</p>
                 </div>
               )}
               {manga.created_at && (
-                <div className="bg-[#23232f] border border-gray-800 rounded-xl p-4">
+                <div className="bg-[#12121c] border border-gray-800 rounded-xl p-4">
                   <p className="text-xs text-gray-500 mb-1">Added</p>
                   <p className="text-sm font-semibold">
                     {new Date(manga.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
@@ -592,8 +592,7 @@ export default function MangaDetailPage() {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="border-t border-gray-800 bg-[#23232f] py-8 px-6 text-center text-gray-500 mt-16">
+      <footer className="border-t border-gray-800 bg-[#12121c] py-8 px-6 text-center text-gray-500 mt-16">
         <p>&copy; 2025 Ouryie. A space for manga & visual novel lovers.</p>
       </footer>
     </div>
