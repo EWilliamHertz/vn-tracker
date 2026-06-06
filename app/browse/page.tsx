@@ -11,7 +11,7 @@ interface Manga {
   title: string;
   author: string;
   description?: string;
-  cover_image_url?: string;
+  image_url?: string;
   rating?: number;
   status?: string;
   chapter_count?: number;
@@ -227,9 +227,9 @@ export default function BrowsePage() {
                     <div className="bg-[#23232f] border border-gray-800 rounded-lg overflow-hidden hover:border-[#8b5cf6] transition-all h-full flex flex-col">
                       {/* Cover Image */}
                       <div className="relative overflow-hidden bg-gray-900 h-64">
-                        {title.cover_image_url ? (
+                        {title.image_url ? (
                           <img 
-                            src={title.cover_image_url} 
+                            src={title.image_url} 
                             alt={title.title}
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                             onError={(e) => {

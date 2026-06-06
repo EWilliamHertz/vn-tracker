@@ -12,7 +12,7 @@ interface Manga {
   title: string;
   author: string;
   description?: string;
-  cover_image_url?: string;
+  image_url?: string;
   rating?: number;
   status?: string;
   chapter_count?: number;
@@ -175,9 +175,9 @@ export default function MangaDetailPage() {
           {/* Cover Image */}
           <div className="md:col-span-1">
             <div className="bg-gray-900 rounded-lg overflow-hidden sticky top-24">
-              {manga.cover_image_url ? (
+              {manga.image_url ? (
                 <img 
-                  src={manga.cover_image_url} 
+                  src={manga.image_url} 
                   alt={manga.title}
                   className="w-full h-auto object-cover"
                   onError={(e) => {

@@ -191,7 +191,7 @@ export default async function LandingPage() {
                   <div className="bg-[#23232f] border border-gray-800 rounded-xl overflow-hidden hover:border-[#8b5cf6]/60 transition-all h-full flex flex-col">
                     <div className="relative overflow-hidden bg-gray-900 aspect-[3/4]">
                       <MangaCover
-                        imageUrl={title.cover_image_url}
+                        imageUrl={title.image_url}
                         title={title.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
