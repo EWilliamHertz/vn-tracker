@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { createClient } from '../utils/supabase/server';
 import { titleToSlug } from '../utils/slug';
 import { BookOpen, Library, Heart, Users, Zap } from 'lucide-react';
+import MangaCover from '@/components/MangaCover';
 
 export const dynamic = 'force-dynamic';
 
@@ -146,17 +147,11 @@ export default async function LandingPage() {
                 >
                   <div className="bg-[#23232f] border border-gray-800 rounded-lg overflow-hidden hover:border-[#8b5cf6] transition-all h-full flex flex-col">
                     <div className="relative overflow-hidden bg-gray-900 h-64">
-                      {title.cover_image_url ? (
-                        <img 
-                          src={title.cover_image_url} 
-                          alt={title.title}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center">
-                          <BookOpen className="w-12 h-12 text-gray-500" />
-                        </div>
-                      )}
+                      <MangaCover 
+                        imageUrl={title.cover_image_url}
+                        title={title.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                      />
                       {/* Rating Badge */}
                       {title.rating && (
                         <div className="absolute top-2 right-2 bg-[#8b5cf6] px-3 py-1 rounded-full text-sm font-semibold">
